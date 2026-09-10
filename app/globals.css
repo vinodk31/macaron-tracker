@@ -125,6 +125,12 @@ a {
   animation: pulse-dot 0.9s ease-in-out infinite;
 }
 
+.save-dot.failed {
+  opacity: 1;
+  background: var(--raspberry);
+  animation: none;
+}
+
 @keyframes pulse-dot {
   0%,
   100% {
@@ -843,6 +849,47 @@ textarea.text-input {
   color: var(--ink-faint);
   font-size: 0.85rem;
   padding: 18px 0;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Login gate                                                              */
+/* ---------------------------------------------------------------------- */
+
+.login-screen {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 24px 16px;
+  gap: 16px;
+}
+
+.login-title {
+  font-size: 1.6rem;
+  text-align: center;
+}
+
+.login-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.login-submit {
+  width: 100%;
+}
+
+.login-submit:disabled {
+  opacity: 0.6;
+}
+
+.login-error {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--raspberry-deep);
 }
 
 @media (min-width: 420px) {
