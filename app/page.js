@@ -3,23 +3,41 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { UnauthorizedError, load, save } from "@/lib/storage";
 import { defaultState, makeId, normalizeState, roundMoney } from "@/lib/model";
-import { todayKey } from "@/lib/dates";
+import {
+  addDays,
+  addMonths,
+  endOfMonth,
+  endOfWeek,
+  formatMonthYear,
+  formatWeekRange,
+  startOfMonth,
+  startOfWeek,
+  todayKey,
+} from "@/lib/dates";
 import DayTab from "@/components/DayTab";
 import WeekTab from "@/components/WeekTab";
 import MonthTab from "@/components/MonthTab";
 import SetupTab from "@/components/SetupTab";
 import LoginGate from "@/components/LoginGate";
+import MyPayTab from "@/components/MyPayTab";
 
-const TABS = [
+const ADMIN_TABS = [
   { id: "day", label: "Day" },
   { id: "week", label: "Week" },
   { id: "month", label: "Month" },
   { id: "setup", label: "Setup" },
 ];
 
+const STAFF_TABS = [
+  { id: "day", label: "Day" },
+  { id: "week", label: "Week" },
+  { id: "month", label: "Month" },
+];
+
 export default function Home() {
   const [data, setData] = useState(null);
   const [status, setStatus] = useState("loading");
+  const [role, setRole] = useState("admin");
   const [loadError, setLoadError] = useState("");
   const [saveState, setSaveState] = useState("idle");
   const [tab, setTab] = useState("day");
@@ -34,9 +52,10 @@ export default function Home() {
 
   const runLoad = useCallback(() => {
     load()
-      .then((stored) => {
-        const next = stored ? normalizeState(stored) : defaultState();
-        lastPersisted.current = stored ? next : null;
+      .then(({ state, role: nextRole }) => {
+        const next = state ? normalizeState(state) : defaultState();
+        lastPersisted.current = state ? next : null;
+        setRole(nextRole || "admin");
         setData(next);
         setStatus("ready");
       })
@@ -163,6 +182,9 @@ export default function Home() {
     );
   }
 
+  const isStaff = role === "staff";
+  const tabs = isStaff ? STAFF_TABS : ADMIN_TABS;
+
   return (
     <div className="app">
       <header className="topbar">
@@ -178,12 +200,34 @@ export default function Home() {
           <DayTab
             settings={data.settings}
             days={data.days}
+            isStaff={isStaff}
             dateKey={dayDate}
             onDateChange={setDayDate}
             onUpdateDay={updateDay}
           />
         )}
-        {tab === "week" && (
+        {tab === "week" && isStaff && (
+          <>
+            <div className="date-nav">
+              <button className="icon-btn" onClick={() => setWeekAnchor(addDays(startOfWeek(weekAnchor), -7))} aria-label="Previous week">
+                ‹
+              </button>
+              <span className="date-label">{formatWeekRange(weekAnchor)}</span>
+              <button className="icon-btn" onClick={() => setWeekAnchor(addDays(startOfWeek(weekAnchor), 7))} aria-label="Next week">
+                ›
+              </button>
+            </div>
+            <MyPayTab
+              settings={data.settings}
+              days={data.days}
+              payments={data.payments}
+              startKey={startOfWeek(weekAnchor)}
+              endKey={endOfWeek(weekAnchor)}
+              periodLabel="This week"
+            />
+          </>
+        )}
+        {tab === "week" && !isStaff && (
           <WeekTab
             settings={data.settings}
             days={data.days}
@@ -195,7 +239,28 @@ export default function Home() {
             onJumpToDay={jumpToDay}
           />
         )}
-        {tab === "month" && (
+        {tab === "month" && isStaff && (
+          <>
+            <div className="date-nav">
+              <button className="icon-btn" onClick={() => setMonthAnchor(addMonths(monthAnchor, -1))} aria-label="Previous month">
+                ‹
+              </button>
+              <span className="date-label">{formatMonthYear(monthAnchor)}</span>
+              <button className="icon-btn" onClick={() => setMonthAnchor(addMonths(monthAnchor, 1))} aria-label="Next month">
+                ›
+              </button>
+            </div>
+            <MyPayTab
+              settings={data.settings}
+              days={data.days}
+              payments={data.payments}
+              startKey={startOfMonth(monthAnchor)}
+              endKey={endOfMonth(monthAnchor)}
+              periodLabel="This month"
+            />
+          </>
+        )}
+        {tab === "month" && !isStaff && (
           <MonthTab
             settings={data.settings}
             days={data.days}
@@ -205,7 +270,7 @@ export default function Home() {
             onJumpToDay={jumpToDay}
           />
         )}
-        {tab === "setup" && (
+        {tab === "setup" && !isStaff && (
           <SetupTab
             settings={data.settings}
             onUpdateSettings={updateSettings}
@@ -215,7 +280,7 @@ export default function Home() {
       </main>
 
       <nav className="tabbar">
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <button
             key={t.id}
             className={tab === t.id ? "active" : ""}

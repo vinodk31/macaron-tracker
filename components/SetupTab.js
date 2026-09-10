@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { makeId } from "@/lib/model";
+import { makeId, makePin } from "@/lib/model";
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DISPLAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
@@ -35,7 +35,23 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
   function addStaff() {
     onUpdateSettings((s) => ({
       ...s,
-      staff: [...s.staff, { id: makeId("staff"), name: "New staff", rate: 15, isDefault: s.staff.length === 0 }],
+      staff: [
+        ...s.staff,
+        {
+          id: makeId("staff"),
+          name: "New staff",
+          rate: 15,
+          isDefault: s.staff.length === 0,
+          pin: makePin(s.staff),
+        },
+      ],
+    }));
+  }
+
+  function regeneratePin(id) {
+    onUpdateSettings((s) => ({
+      ...s,
+      staff: s.staff.map((p) => (p.id === id ? { ...p, pin: makePin(s.staff) } : p)),
     }));
   }
 
@@ -206,6 +222,24 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
             </button>
           </div>
         ))}
+        {settings.staff.length > 0 && (
+          <>
+            <div className="section-label" style={{ marginTop: 12 }}>Sign-in PINs</div>
+            {settings.staff.map((p) => (
+              <div className="pin-row" key={p.id}>
+                <span className="pin-name">{p.name}</span>
+                {p.pin ? <code className="pin-code">{p.pin}</code> : <span className="pin-none">no PIN</span>}
+                <button className="btn btn-sm" onClick={() => regeneratePin(p.id)}>
+                  {p.pin ? "New PIN" : "Generate"}
+                </button>
+              </div>
+            ))}
+            <p className="card-subtitle">
+              Staff sign in with these 5 digits via the Staff PIN button on the login screen. They
+              only ever see their own pay and hours. Issuing a new PIN immediately retires the old one.
+            </p>
+          </>
+        )}
         <p className="card-subtitle">★ marks who gets auto-scheduled for each day&apos;s default shift.</p>
       </section>
 

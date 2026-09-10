@@ -5,7 +5,7 @@ import { addDays, formatShortDate, isToday, todayKey } from "@/lib/dates";
 import { COMPARISON_PERIODS, flavorCountAsOf, flavorSoldInRange, lastKnownCountBefore } from "@/lib/model";
 import HoursCard from "./HoursCard";
 
-export default function DayTab({ settings, days, dateKey, onDateChange, onUpdateDay }) {
+export default function DayTab({ settings, days, isStaff, dateKey, onDateChange, onUpdateDay }) {
   const [periodId, setPeriodId] = useState("yesterday");
   const period = COMPARISON_PERIODS.find((p) => p.id === periodId) || COMPARISON_PERIODS[0];
   const comparisonKey = period.offset(dateKey);
@@ -107,7 +107,7 @@ export default function DayTab({ settings, days, dateKey, onDateChange, onUpdate
         </div>
       </section>
 
-      <HoursCard settings={settings} days={days} dateKey={dateKey} onUpdateDay={onUpdateDay} />
+      <HoursCard settings={settings} days={days} isStaff={isStaff} dateKey={dateKey} onUpdateDay={onUpdateDay} />
 
       <section className="card">
         <div className="card-header">

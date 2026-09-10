@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { isAuthorized } from "@/lib/session";
+import { ROLE_ADMIN, getSession } from "@/lib/session";
 import { readState, writeState } from "@/lib/db";
+import { normalizeState } from "@/lib/model";
+import { mergeStaffChanges, scopeStateForStaff } from "@/lib/access";
 
 export const dynamic = "force-dynamic";
 
@@ -9,24 +11,45 @@ function unauthorized() {
 }
 
 export async function GET(request) {
-  if (!isAuthorized(request)) return unauthorized();
-  const data = await readState();
-  return NextResponse.json({ data });
+  const session = getSession(request);
+  if (!session) return unauthorized();
+
+  const stored = await readState();
+  if (session.role === ROLE_ADMIN) {
+    return NextResponse.json({ data: stored, role: session.role });
+  }
+
+  // A staff session before any state exists has nothing to scope to.
+  if (!stored) return unauthorized();
+  const scoped = scopeStateForStaff(normalizeState(stored), session.staffId);
+  if (!scoped) return unauthorized();
+  return NextResponse.json({ data: scoped, role: session.role });
 }
 
 export async function PUT(request) {
-  if (!isAuthorized(request)) return unauthorized();
+  const session = getSession(request);
+  if (!session) return unauthorized();
 
-  let data;
+  let incoming;
   try {
-    data = await request.json();
+    incoming = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  if (!data || typeof data !== "object" || Array.isArray(data)) {
+  if (!incoming || typeof incoming !== "object" || Array.isArray(incoming)) {
     return NextResponse.json({ error: "Expected a state object" }, { status: 400 });
   }
 
-  await writeState(data);
+  if (session.role === ROLE_ADMIN) {
+    await writeState(incoming);
+    return NextResponse.json({ ok: true });
+  }
+
+  const stored = await readState();
+  if (!stored) return unauthorized();
+  const state = normalizeState(stored);
+  if (!state.settings.staff.some((s) => s.id === session.staffId)) return unauthorized();
+
+  await writeState(mergeStaffChanges(state, incoming, session.staffId));
   return NextResponse.json({ ok: true });
 }
