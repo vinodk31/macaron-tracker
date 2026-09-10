@@ -1,6 +1,6 @@
 "use client";
 
-import { addDays, endOfWeek, formatWeekRange, startOfWeek, weekdayName } from "@/lib/dates";
+import { addDays, endOfWeek, formatWeekRange, startOfWeek, todayKey, weekdayName } from "@/lib/dates";
 import {
   dailyTotals,
   flavorRanking,
@@ -11,8 +11,18 @@ import {
 import StatTile from "./StatTile";
 import BarChart from "./BarChart";
 import FlavorRanking from "./FlavorRanking";
+import PayrollCard from "./PayrollCard";
 
-export default function WeekTab({ settings, days, anchor, onAnchorChange, onJumpToDay }) {
+export default function WeekTab({
+  settings,
+  days,
+  payments,
+  anchor,
+  onAnchorChange,
+  onJumpToDay,
+  onRecordPayment,
+  onRemovePayment,
+}) {
   const startKey = startOfWeek(anchor);
   const endKey = endOfWeek(anchor);
   const flavors = settings.flavors;
@@ -54,6 +64,17 @@ export default function WeekTab({ settings, days, anchor, onAnchorChange, onJump
         </div>
         <BarChart totals={totals} dayLabel={(d) => weekdayName(d).slice(0, 1)} onJumpToDay={onJumpToDay} />
       </section>
+
+      <PayrollCard
+        settings={settings}
+        days={days}
+        payments={payments}
+        weekStart={startKey}
+        weekEnd={endKey}
+        today={todayKey()}
+        onRecordPayment={onRecordPayment}
+        onRemovePayment={onRemovePayment}
+      />
 
       <section className="card">
         <div className="card-header">

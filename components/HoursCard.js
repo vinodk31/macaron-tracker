@@ -7,6 +7,7 @@ import {
   scheduledHoursForDate,
   laborCostForDate,
   shiftHours,
+  staffEarningsInRange,
 } from "@/lib/model";
 
 export default function HoursCard({ settings, days, dateKey, onUpdateDay }) {
@@ -15,6 +16,9 @@ export default function HoursCard({ settings, days, dateKey, onUpdateDay }) {
   const usingDefault = isUsingDefaultHours(days, dateKey);
   const totalHours = scheduledHoursForDate(settings, days, dateKey);
   const laborCost = laborCostForDate(settings, days, dateKey);
+  const owedToday = staffEarningsInRange(settings, days, dateKey, dateKey).filter(
+    (row) => row.earned > 0
+  );
 
   function setOverride(nextHours) {
     onUpdateDay(dateKey, (day) => ({ ...day, hours: nextHours }));
@@ -130,6 +134,15 @@ export default function HoursCard({ settings, days, dateKey, onUpdateDay }) {
               Labor: <strong>${laborCost.toFixed(2)}</strong>
             </span>
           </div>
+          {owedToday.map(({ staff, hours, earned }) => (
+            <div className="day-pay-row" key={staff.id}>
+              <span>
+                {staff.name}
+                <span className="day-pay-meta"> · {hours.toFixed(2)} hrs</span>
+              </span>
+              <strong>${earned.toFixed(2)}</strong>
+            </div>
+          ))}
         </>
       )}
     </section>

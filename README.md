@@ -33,5 +33,6 @@ The `app_state` table is created automatically on first use — there's no migra
 ## Tabs
 
 - **Day** — date navigation, freezer counts with a comparison-period picker (yesterday/week/month/year), hours, and a note.
-- **Week** / **Month** — stat tiles (units sold, freezer level, scheduled hours, labor cost), a sold-per-day bar chart, and a per-flavor ranking.
+- **Week** — stat tiles, sold-per-day bar chart, per-flavor ranking, and **Payroll**: what each person earned that week, a Mark paid button per person, and the running outstanding balance (or "All clear").
+- **Month** — the same stats plus **cost of goods sold**: wages actually paid out during the month per person, ingredient cost from macarons sold, and the COGS total with cost per macaron.
 - **Setup** — shop name, weekly store hours, prep/close buffers, staff & rates, flavor list, and a two-step data wipe.
