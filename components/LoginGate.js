@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { login } from "@/lib/auth";
 
-export default function LoginGate({ onSignedIn }) {
+export default function LoginGate({ onSignedIn, notice }) {
   const [mode, setMode] = useState("owner");
   const [password, setPassword] = useState("");
   const [pin, setPin] = useState("");
@@ -23,21 +24,16 @@ export default function LoginGate({ onSignedIn }) {
     setBusy(true);
     setError("");
     try {
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(isPinMode ? { pin } : { password }),
-      });
-      if (res.ok) {
+      const result = await login(isPinMode ? { pin } : { password });
+      if (result.ok) {
         onSignedIn();
         return;
       }
-      const body = await res.json().catch(() => ({}));
-      if (res.status === 429) {
-        const minutes = Math.ceil((body.retryInSeconds || 60) / 60);
+      if (result.status === 429) {
+        const minutes = Math.ceil((result.retryInSeconds || 60) / 60);
         setError(`Too many attempts. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`);
       } else {
-        setError(body.error || `Sign-in failed (${res.status})`);
+        setError(result.error || `Sign-in failed (${result.status})`);
       }
     } catch {
       setError("Could not reach the server");
@@ -49,6 +45,7 @@ export default function LoginGate({ onSignedIn }) {
   return (
     <div className="login-screen">
       <h1 className="login-title">Macaron Tracker</h1>
+      {notice && <p className="login-notice">{notice}</p>}
       <form className="card login-card" onSubmit={submit}>
         {isPinMode ? (
           <div className="field">
