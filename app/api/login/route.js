@@ -1,29 +1,24 @@
 import { NextResponse } from "next/server";
 import {
   ROLE_ADMIN,
+  ROLE_FRANCHISOR,
   ROLE_STAFF,
-  checkPassword,
   createSessionToken,
   sessionCookieOptions,
   COOKIE_NAME,
 } from "@/lib/session";
 import {
   clearFailedAttempts,
+  findOwnerByEmail,
+  findTenantsWithPin,
   getLockRemainingSeconds,
-  readState,
   registerFailedAttempt,
 } from "@/lib/db";
+import { verifyPassword } from "@/lib/passwords";
 import { findStaffByPin, normalizeState } from "@/lib/model";
+import { throttleKey } from "@/lib/throttle";
 
 export const dynamic = "force-dynamic";
-
-// Behind Vercel the client address arrives in x-forwarded-for. Falling back to
-// a shared bucket means a spoofed header can't dodge the lockout entirely.
-function throttleKey(request) {
-  const forwarded = request.headers.get("x-forwarded-for");
-  const ip = forwarded ? forwarded.split(",")[0].trim() : "";
-  return ip ? `ip:${ip}` : "shared";
-}
 
 export async function POST(request) {
   let body;
@@ -48,7 +43,7 @@ export async function POST(request) {
     return NextResponse.json(
       lockedSeconds
         ? { error: "Too many attempts", retryInSeconds: lockedSeconds }
-        : { error: body?.pin ? "That PIN wasn't recognised" : "Incorrect password" },
+        : { error: body?.pin ? "That PIN wasn't recognised" : "Email or password is incorrect" },
       { status: lockedSeconds ? 429 : 401 }
     );
   }
@@ -60,13 +55,35 @@ export async function POST(request) {
 }
 
 async function authenticate(body) {
-  if (typeof body?.pin === "string") {
-    const state = normalizeState(await readState());
-    const staff = findStaffByPin(state.settings.staff, body.pin);
-    return staff ? { role: ROLE_STAFF, staffId: staff.id } : null;
-  }
-  if (typeof body?.password === "string" && checkPassword(body.password)) {
-    return { role: ROLE_ADMIN };
+  if (typeof body?.pin === "string") return authenticateStaff(body.pin);
+  if (typeof body?.email === "string" && typeof body?.password === "string") {
+    return authenticateOwner(body.email, body.password);
   }
   return null;
+}
+
+// Staff sign in with a PIN alone, so it has to identify the location too.
+// Uniqueness is enforced when PINs are issued; if two locations somehow hold
+// the same one, refuse rather than guess which person is signing in.
+async function authenticateStaff(pin) {
+  if (!/^\d{5}$/.test(pin)) return null;
+
+  const matches = await findTenantsWithPin(pin);
+  if (matches.length !== 1) return null;
+
+  const { id: tenantId, data } = matches[0];
+  const staff = findStaffByPin(normalizeState(data).settings.staff, pin);
+  return staff ? { role: ROLE_STAFF, tenantId, staffId: staff.id } : null;
+}
+
+async function authenticateOwner(email, password) {
+  const owner = await findOwnerByEmail(email.trim().toLowerCase());
+  if (!owner) return null;
+  if (!(await verifyPassword(password, owner.password_hash))) return null;
+
+  if (owner.role === "franchisor") {
+    // No location until they pick one from the locations list.
+    return { role: ROLE_FRANCHISOR, tenantId: "" };
+  }
+  return owner.tenant_id ? { role: ROLE_ADMIN, tenantId: owner.tenant_id } : null;
 }

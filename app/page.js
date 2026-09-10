@@ -21,6 +21,7 @@ import WeekTab from "@/components/WeekTab";
 import MonthTab from "@/components/MonthTab";
 import SetupTab from "@/components/SetupTab";
 import LoginGate from "@/components/LoginGate";
+import LocationsScreen from "@/components/LocationsScreen";
 import MyPayTab from "@/components/MyPayTab";
 
 const IDLE_LIMIT_MS = 5 * 60 * 1000;
@@ -50,6 +51,7 @@ export default function Home() {
   const [status, setStatus] = useState("loading");
   const [role, setRole] = useState("admin");
   const [signOutNotice, setSignOutNotice] = useState("");
+  const [tenantId, setTenantId] = useState(null);
   const [loadError, setLoadError] = useState("");
   const [saveState, setSaveState] = useState("idle");
   const [tab, setTab] = useState("day");
@@ -64,10 +66,18 @@ export default function Home() {
 
   const runLoad = useCallback(() => {
     load()
-      .then(({ state, role: nextRole }) => {
+      .then(({ state, role: nextRole, tenantId: nextTenantId }) => {
+        setRole(nextRole || "admin");
+        setTenantId(nextTenantId || null);
+        // A franchisor lands on the locations list, with no location open yet.
+        if (!nextTenantId) {
+          lastPersisted.current = null;
+          setData(null);
+          setStatus("ready");
+          return;
+        }
         const next = state ? normalizeState(state) : defaultState();
         lastPersisted.current = state ? next : null;
-        setRole(nextRole || "admin");
         setData(next);
         setStatus("ready");
       })
@@ -100,6 +110,21 @@ export default function Home() {
   }, []);
 
   const handleSignOut = useCallback(() => endSession(""), [endSession]);
+
+  const openLocation = useCallback(
+    async (nextTenantId) => {
+      setStatus("loading");
+      await fetch("/api/locations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenantId: nextTenantId }),
+      });
+      runLoad();
+    },
+    [runLoad]
+  );
+
+  const leaveLocation = useCallback(() => openLocation(""), [openLocation]);
   const handleIdle = useCallback(
     () => endSession("Signed out after 5 minutes of inactivity."),
     [endSession]
@@ -116,7 +141,7 @@ export default function Home() {
   });
 
   useEffect(() => {
-    if (status !== "ready" || !data || data === lastPersisted.current) return;
+    if (status !== "ready" || !data || !tenantId || data === lastPersisted.current) return;
 
     setSaveState("saving");
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -138,7 +163,7 @@ export default function Home() {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [data, status]);
+  }, [data, status, tenantId]);
 
   const updateSettings = useCallback((updater) => {
     setData((prev) => ({
@@ -206,6 +231,10 @@ export default function Home() {
     );
   }
 
+  if (status === "ready" && role === "franchisor" && !tenantId) {
+    return <LocationsScreen onOpenLocation={openLocation} onSignOut={handleSignOut} />;
+  }
+
   if (status === "loading" || !data) {
     return (
       <div className="app">
@@ -230,8 +259,11 @@ export default function Home() {
             {saveState === "saving" ? "Saving…" : saveState === "error" ? "Save failed" : "Saved"}
           </span>
         </div>
-        <button className="btn btn-ghost btn-sm sign-out-btn" onClick={handleSignOut}>
-          Sign out
+        <button
+          className="btn btn-ghost btn-sm sign-out-btn"
+          onClick={role === "franchisor" ? leaveLocation : handleSignOut}
+        >
+          {role === "franchisor" ? "All locations" : "Sign out"}
         </button>
       </header>
 

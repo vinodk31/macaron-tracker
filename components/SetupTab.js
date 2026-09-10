@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { makeId, makePin } from "@/lib/model";
+import { makeId } from "@/lib/model";
+import { issuePin } from "@/lib/pins";
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DISPLAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
 export default function SetupTab({ settings, onUpdateSettings, onEraseAllData }) {
   const [confirmingErase, setConfirmingErase] = useState(false);
+  const [pinError, setPinError] = useState("");
 
   function updateHours(wd, patch) {
     onUpdateSettings((s) => ({ ...s, hours: { ...s.hours, [wd]: { ...s.hours[wd], ...patch } } }));
@@ -32,7 +34,15 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
     }));
   }
 
-  function addStaff() {
+  async function addStaff() {
+    setPinError("");
+    let pin;
+    try {
+      pin = await issuePin();
+    } catch {
+      setPinError("Could not issue a PIN. Try again.");
+      return;
+    }
     onUpdateSettings((s) => ({
       ...s,
       staff: [
@@ -43,16 +53,24 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
           rate: 15,
           isDefault: s.staff.length === 0,
           active: true,
-          pin: makePin(s.staff),
+          pin,
         },
       ],
     }));
   }
 
-  function regeneratePin(id) {
+  async function regeneratePin(id) {
+    setPinError("");
+    let pin;
+    try {
+      pin = await issuePin();
+    } catch {
+      setPinError("Could not issue a PIN. Try again.");
+      return;
+    }
     onUpdateSettings((s) => ({
       ...s,
-      staff: s.staff.map((p) => (p.id === id ? { ...p, pin: makePin(s.staff) } : p)),
+      staff: s.staff.map((p) => (p.id === id ? { ...p, pin } : p)),
     }));
   }
 
@@ -234,6 +252,7 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
         {settings.staff.length > 0 && (
           <>
             <div className="section-label" style={{ marginTop: 12 }}>Sign-in PINs</div>
+            {pinError && <p className="login-error">{pinError}</p>}
             {settings.staff.map((p) => (
               <div className="pin-row" key={p.id}>
                 <span className="pin-name">{p.name}</span>
