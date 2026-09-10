@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { UnauthorizedError, load, save } from "@/lib/storage";
-import { defaultState } from "@/lib/model";
+import { defaultState, makeId, normalizeState, roundMoney } from "@/lib/model";
 import { todayKey } from "@/lib/dates";
 import DayTab from "@/components/DayTab";
 import WeekTab from "@/components/WeekTab";
@@ -35,7 +35,7 @@ export default function Home() {
   const runLoad = useCallback(() => {
     load()
       .then((stored) => {
-        const next = stored || defaultState();
+        const next = stored ? normalizeState(stored) : defaultState();
         lastPersisted.current = stored ? next : null;
         setData(next);
         setStatus("ready");
@@ -107,8 +107,31 @@ export default function Home() {
     setTab("day");
   }, []);
 
+  const recordPayment = useCallback((staffId, weekStart, amount) => {
+    setData((prev) => ({
+      ...prev,
+      payments: [
+        ...prev.payments.filter((p) => !(p.staffId === staffId && p.weekStart === weekStart)),
+        {
+          id: makeId("payment"),
+          staffId,
+          weekStart,
+          amount: roundMoney(amount),
+          paidOn: todayKey(),
+        },
+      ],
+    }));
+  }, []);
+
+  const removePayment = useCallback((paymentId) => {
+    setData((prev) => ({
+      ...prev,
+      payments: prev.payments.filter((p) => p.id !== paymentId),
+    }));
+  }, []);
+
   const eraseAllData = useCallback(() => {
-    setData((prev) => ({ ...prev, days: {} }));
+    setData((prev) => ({ ...prev, days: {}, payments: [] }));
   }, []);
 
   if (status === "locked") {
@@ -164,6 +187,9 @@ export default function Home() {
           <WeekTab
             settings={data.settings}
             days={data.days}
+            payments={data.payments}
+            onRecordPayment={recordPayment}
+            onRemovePayment={removePayment}
             anchor={weekAnchor}
             onAnchorChange={setWeekAnchor}
             onJumpToDay={jumpToDay}
@@ -173,6 +199,7 @@ export default function Home() {
           <MonthTab
             settings={data.settings}
             days={data.days}
+            payments={data.payments}
             anchor={monthAnchor}
             onAnchorChange={setMonthAnchor}
             onJumpToDay={jumpToDay}

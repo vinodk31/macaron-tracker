@@ -1,6 +1,6 @@
 "use client";
 
-import { addMonths, endOfMonth, formatMonthYear, fromKey, startOfMonth } from "@/lib/dates";
+import { addMonths, endOfMonth, formatMonthYear, fromKey, startOfMonth, todayKey } from "@/lib/dates";
 import {
   dailyTotals,
   flavorRanking,
@@ -11,8 +11,9 @@ import {
 import StatTile from "./StatTile";
 import BarChart from "./BarChart";
 import FlavorRanking from "./FlavorRanking";
+import CogsCard from "./CogsCard";
 
-export default function MonthTab({ settings, days, anchor, onAnchorChange, onJumpToDay }) {
+export default function MonthTab({ settings, days, payments, anchor, onAnchorChange, onJumpToDay }) {
   const startKey = startOfMonth(anchor);
   const endKey = endOfMonth(anchor);
   const flavors = settings.flavors;
@@ -54,6 +55,15 @@ export default function MonthTab({ settings, days, anchor, onAnchorChange, onJum
         </div>
         <BarChart totals={totals} dayLabel={(d) => String(fromKey(d).getDate())} onJumpToDay={onJumpToDay} />
       </section>
+
+      <CogsCard
+        settings={settings}
+        days={days}
+        payments={payments}
+        startKey={startKey}
+        endKey={endKey}
+        today={todayKey()}
+      />
 
       <section className="card">
         <div className="card-header">

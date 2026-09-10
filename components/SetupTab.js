@@ -85,6 +85,20 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
             onChange={(e) => onUpdateSettings((s) => ({ ...s, shopName: e.target.value }))}
           />
         </div>
+        <div className="field" style={{ marginTop: 12 }}>
+          <label>Cost per macaron ($)</label>
+          <input
+            className="number-input"
+            type="number"
+            min="0"
+            step="0.01"
+            value={settings.unitCost ?? 0}
+            onChange={(e) =>
+              onUpdateSettings((s) => ({ ...s, unitCost: Number(e.target.value) || 0 }))
+            }
+          />
+          <p className="card-subtitle">Ingredient cost used for the month-end COGS figure.</p>
+        </div>
       </section>
 
       <section className="card">

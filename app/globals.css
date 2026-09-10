@@ -852,6 +852,150 @@ textarea.text-input {
 }
 
 /* ---------------------------------------------------------------------- */
+/* Payroll & COGS                                                          */
+/* ---------------------------------------------------------------------- */
+
+.payroll-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.payroll-row:last-of-type {
+  border-bottom: none;
+}
+
+.payroll-who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.payroll-name {
+  font-weight: 600;
+  font-size: 0.88rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.payroll-meta {
+  font-size: 0.7rem;
+  color: var(--ink-faint);
+}
+
+.payroll-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.25;
+  flex-shrink: 0;
+}
+
+.payroll-earned {
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.payroll-paid-note {
+  font-size: 0.66rem;
+  color: var(--pistachio-deep);
+  white-space: nowrap;
+}
+
+.payroll-action {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.payroll-action.paid {
+  background: var(--pistachio-bg);
+  border-color: var(--pistachio);
+  color: var(--pistachio-deep);
+}
+
+.balance-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--raspberry-bg);
+  color: var(--raspberry-deep);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.balance-bar strong {
+  font-family: var(--font-display), serif;
+  font-size: 1.05rem;
+}
+
+.balance-bar.clear {
+  background: var(--pistachio-bg);
+  color: var(--pistachio-deep);
+  justify-content: center;
+}
+
+.day-pay-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  padding: 4px 0 0;
+}
+
+.day-pay-meta {
+  color: var(--ink-faint);
+}
+
+.cogs-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 0;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.cogs-row:last-of-type {
+  border-bottom: none;
+}
+
+.cogs-row.subtotal {
+  font-weight: 600;
+}
+
+.cogs-row.total {
+  border-top: 1px solid var(--hairline);
+  border-bottom: none;
+  margin-top: 4px;
+  padding-top: 10px;
+  font-family: var(--font-display), serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.cogs-value {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cogs-note {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--ink-faint);
+  font-weight: 400;
+}
+
+/* ---------------------------------------------------------------------- */
 /* Login gate                                                              */
 /* ---------------------------------------------------------------------- */
 
