@@ -78,6 +78,28 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
     onUpdateSettings((s) => ({ ...s, staff: s.staff.filter((p) => p.id !== id) }));
   }
 
+  function updateProduct(id, patch) {
+    onUpdateSettings((s) => ({
+      ...s,
+      products: s.products.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+    }));
+  }
+
+  function addProduct() {
+    onUpdateSettings((s) => ({
+      ...s,
+      products: [...s.products, { id: makeId("product"), name: "New product", price: 0, unitCost: 0 }],
+    }));
+  }
+
+  // Flavors belong to a product, so removing one would orphan its counts.
+  function removeProduct(id) {
+    onUpdateSettings((s) => {
+      if (s.flavors.some((f) => f.productId === id)) return s;
+      return { ...s, products: s.products.filter((p) => p.id !== id) };
+    });
+  }
+
   function updateFlavor(id, name) {
     onUpdateSettings((s) => ({
       ...s,
@@ -85,10 +107,10 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
     }));
   }
 
-  function addFlavor() {
+  function addFlavor(productId) {
     onUpdateSettings((s) => ({
       ...s,
-      flavors: [...s.flavors, { id: makeId("flavor"), name: "New flavor" }],
+      flavors: [...s.flavors, { id: makeId("flavor"), productId, name: "New flavor" }],
     }));
   }
 
@@ -119,20 +141,6 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
             value={settings.shopName}
             onChange={(e) => onUpdateSettings((s) => ({ ...s, shopName: e.target.value }))}
           />
-        </div>
-        <div className="field" style={{ marginTop: 12 }}>
-          <label>Cost per macaron ($)</label>
-          <input
-            className="number-input"
-            type="number"
-            min="0"
-            step="0.01"
-            value={settings.unitCost ?? 0}
-            onChange={(e) =>
-              onUpdateSettings((s) => ({ ...s, unitCost: Number(e.target.value) || 0 }))
-            }
-          />
-          <p className="card-subtitle">Ingredient cost used for the month-end COGS figure.</p>
         </div>
       </section>
 
@@ -280,25 +288,97 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
 
       <section className="card">
         <div className="card-header">
-          <h2>Flavors</h2>
-          <button className="btn btn-sm" onClick={addFlavor}>
+          <h2>Products</h2>
+          <button className="btn btn-sm" onClick={addProduct}>
             + Add
           </button>
         </div>
-        {settings.flavors.length === 0 && <p className="empty-state">No flavors yet.</p>}
-        {settings.flavors.map((f) => (
-          <div className="list-row" key={f.id}>
-            <input
-              className="text-input grow"
-              type="text"
-              value={f.name}
-              onChange={(e) => updateFlavor(f.id, e.target.value)}
-            />
-            <button className="btn-ghost" onClick={() => removeFlavor(f.id)} aria-label="Remove flavor">
-              ✕
-            </button>
-          </div>
-        ))}
+        <p className="card-subtitle">
+          Price and ingredient cost live on the product, so every flavor under it follows. Flavors
+          are what you count in the freezer.
+        </p>
+
+        {settings.products.map((product) => {
+          const flavors = settings.flavors.filter((f) => f.productId === product.id);
+          return (
+            <div className="product-block" key={product.id}>
+              <div className="list-row">
+                <input
+                  className="text-input grow"
+                  type="text"
+                  value={product.name}
+                  onChange={(e) => updateProduct(product.id, { name: e.target.value })}
+                />
+                <button
+                  className="btn-ghost"
+                  onClick={() => removeProduct(product.id)}
+                  aria-label="Remove product"
+                  title={
+                    flavors.length > 0
+                      ? "Remove its flavors first"
+                      : "Remove product"
+                  }
+                  disabled={flavors.length > 0}
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="btn-row">
+                <div className="field" style={{ flex: 1 }}>
+                  <label>Price ($)</label>
+                  <input
+                    className={`number-input${product.price ? "" : " needs-value"}`}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={product.price ?? 0}
+                    onChange={(e) =>
+                      updateProduct(product.id, { price: Number(e.target.value) || 0 })
+                    }
+                  />
+                </div>
+                <div className="field" style={{ flex: 1 }}>
+                  <label>Cost ($)</label>
+                  <input
+                    className="number-input"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={product.unitCost ?? 0}
+                    onChange={(e) =>
+                      updateProduct(product.id, { unitCost: Number(e.target.value) || 0 })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="section-label">Flavors</div>
+              {flavors.length === 0 && <p className="empty-state">No flavors yet.</p>}
+              {flavors.map((f) => (
+                <div className="list-row" key={f.id}>
+                  <input
+                    className="text-input grow"
+                    type="text"
+                    value={f.name}
+                    onChange={(e) => updateFlavor(f.id, e.target.value)}
+                  />
+                  <button
+                    className="btn-ghost"
+                    onClick={() => removeFlavor(f.id)}
+                    aria-label="Remove flavor"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+              <div className="btn-row" style={{ marginTop: 6 }}>
+                <button className="btn btn-sm" onClick={() => addFlavor(product.id)}>
+                  + Add flavor
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </section>
 
       <section className="card danger-zone">

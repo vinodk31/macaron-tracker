@@ -13,18 +13,21 @@ Open [http://localhost:3000](http://localhost:3000) — designed for a phone-wid
 
 ## Environment variables
 
-All three are required, locally in `.env.local` and in the Vercel project settings:
+Required locally in `.env.local` and in the Vercel project settings:
 
 | Variable | What it is |
 | --- | --- |
 | `DATABASE_URL` | Postgres connection string. Set automatically when you add Neon from the Vercel Marketplace. |
-| `APP_PASSWORD` | The password for the sign-in screen. |
 | `AUTH_SECRET` | Random string used to sign the session cookie. Generate with `openssl rand -hex 32`. |
+| `FRANCHISOR_EMAIL` | Sign-in email for the franchisor account, seeded on first run. |
+| `APP_PASSWORD` | The franchisor's password. Without this and `FRANCHISOR_EMAIL`, no franchisor account exists and nobody can sign in as one. |
+| `INVITE_CODE` | Shared with franchisees so they can register a location. Registration is closed while it is unset. |
 
-The `app_state` table is created automatically on first use — there's no migration step.
+Tables are created automatically on first use — there's no migration step, and existing single-shop data is adopted as the first location.
 
 ## How it works
 
+- **Products carry price and cost; flavors are what you count.** Macarons, Crambellos and Cake pops each have their own price and ingredient cost, and every flavor under a product inherits them — so raising macaron prices is one edit, not one per flavor. Revenue, COGS and gross margin follow from that.
 - **Inventory is a freezer count.** Each day you enter one integer per flavor: what's physically in the freezer. There's no "sold" field — sold and restocked are derived by comparing each day's count to the previous *recorded* count for that flavor (days with no count are skipped, not treated as zero).
 - **Hours auto-fill.** Every day gets a shift derived from the store's weekday hours plus prep/close-out buffers, with no data entry needed. Editing the default hours in Setup retroactively updates every day that hasn't been individually overridden.
 - **Storage** lives entirely behind `lib/storage.js` (`load()`/`save()`), which talks to `/api/state`. The whole `{ settings, days }` object is one JSONB row in Postgres, so the API is just a read and a write. Data entered before the migration is picked up from `localStorage` once and uploaded, so nothing is lost.
@@ -40,5 +43,5 @@ The `app_state` table is created automatically on first use — there's no migra
 
 - **Day** — date navigation, freezer counts with a comparison-period picker (yesterday/week/month/year), hours, and a note.
 - **Week** — stat tiles, sold-per-day bar chart, per-flavor ranking, and **Payroll**: what each person earned that week, a Mark paid button per person, and the running outstanding balance (or "All clear").
-- **Month** — the same stats plus **cost of goods sold**: wages actually paid out during the month per person, ingredient cost from macarons sold, and the COGS total with cost per macaron.
-- **Setup** — shop name, weekly store hours, prep/close buffers, staff & rates, flavor list, and a two-step data wipe.
+- **Month** — the same stats plus **revenue and COGS**: what sold per product at its price, wages actually paid out during the month per person, ingredient cost, and gross margin.
+- **Setup** — shop name, weekly store hours, prep/close buffers, staff & rates with sign-in PINs, products with their price, cost and flavors, and a two-step data wipe.
