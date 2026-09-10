@@ -1187,3 +1187,39 @@ textarea.text-input {
     grid-template-columns: 1.6fr 0.7fr 0.85fr 0.85fr;
   }
 }
+
+/* ---------------------------------------------------------------------- */
+/* Products                                                                */
+/* ---------------------------------------------------------------------- */
+
+.product-heading {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 700;
+  color: var(--pistachio-deep);
+  padding: 10px 4px 4px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.product-block {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.product-block:last-of-type {
+  border-bottom: none;
+}
+
+.number-input.needs-value {
+  border-color: var(--raspberry);
+  background: var(--raspberry-bg);
+}
+
+.btn-ghost:disabled {
+  opacity: 0.3;
+}
+
+.cogs-row.total.negative .cogs-value {
+  color: var(--raspberry-deep);
+}

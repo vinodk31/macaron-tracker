@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import { addDays, formatShortDate, isToday, todayKey } from "@/lib/dates";
-import { COMPARISON_PERIODS, flavorCountAsOf, flavorSoldInRange, lastKnownCountBefore } from "@/lib/model";
+import {
+  COMPARISON_PERIODS,
+  flavorCountAsOf,
+  flavorSoldInRange,
+  flavorsForProduct,
+  lastKnownCountBefore,
+} from "@/lib/model";
 import HoursCard from "./HoursCard";
 
 export default function DayTab({ settings, days, isStaff, dateKey, onDateChange, onUpdateDay }) {
@@ -70,37 +76,51 @@ export default function DayTab({ settings, days, isStaff, dateKey, onDateChange,
             <span>Sold</span>
             <span>Today</span>
           </div>
-          {settings.flavors.map((flavor) => {
-            const was = flavorCountAsOf(days, flavor.id, comparisonKey);
-            const { sold, restocked } = flavorSoldInRange(
-              days,
-              flavor.id,
-              addDays(comparisonKey, 1),
-              dateKey
-            );
-            const current = day.counts && typeof day.counts[flavor.id] === "number" ? day.counts[flavor.id] : "";
-            const placeholder =
-              current === "" ? lastKnownCountBefore(days, flavor.id, dateKey) : undefined;
-
+          {settings.products.map((product) => {
+            const flavors = flavorsForProduct(settings, product.id);
+            if (flavors.length === 0) return null;
             return (
-              <div className="flavor-row" key={flavor.id}>
-                <span className="col col-name flavor-name">{flavor.name}</span>
-                <span className="col col-was">{typeof was === "number" ? was : "–"}</span>
-                <span className="col col-sold">
-                  <span>{sold}</span>
-                  {restocked > 0 && <span className="restock-badge">+{restocked}</span>}
-                </span>
-                <span className="col">
-                  <input
-                    className="count-input"
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={current}
-                    placeholder={typeof placeholder === "number" ? String(placeholder) : ""}
-                    onChange={(e) => setCount(flavor.id, e.target.value.replace(/[^0-9]/g, ""))}
-                  />
-                </span>
+              <div key={product.id}>
+                <div className="product-heading">{product.name}</div>
+                {flavors.map((flavor) => {
+                  const was = flavorCountAsOf(days, flavor.id, comparisonKey);
+                  const { sold, restocked } = flavorSoldInRange(
+                    days,
+                    flavor.id,
+                    addDays(comparisonKey, 1),
+                    dateKey
+                  );
+                  const current =
+                    day.counts && typeof day.counts[flavor.id] === "number"
+                      ? day.counts[flavor.id]
+                      : "";
+                  const placeholder =
+                    current === "" ? lastKnownCountBefore(days, flavor.id, dateKey) : undefined;
+
+                  return (
+                    <div className="flavor-row" key={flavor.id}>
+                      <span className="col col-name flavor-name">{flavor.name}</span>
+                      <span className="col col-was">{typeof was === "number" ? was : "–"}</span>
+                      <span className="col col-sold">
+                        <span>{sold}</span>
+                        {restocked > 0 && <span className="restock-badge">+{restocked}</span>}
+                      </span>
+                      <span className="col">
+                        <input
+                          className="count-input"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={current}
+                          placeholder={typeof placeholder === "number" ? String(placeholder) : ""}
+                          onChange={(e) =>
+                            setCount(flavor.id, e.target.value.replace(/[^0-9]/g, ""))
+                          }
+                        />
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             );
           })}

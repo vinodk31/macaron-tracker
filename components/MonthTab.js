@@ -6,6 +6,7 @@ import {
   flavorRanking,
   freezerLevelAsOf,
   laborCostInRange,
+  revenueInRange,
   scheduledHoursInRange,
 } from "@/lib/model";
 import StatTile from "./StatTile";
@@ -25,6 +26,7 @@ export default function MonthTab({ settings, days, payments, anchor, onAnchorCha
   const laborCost = laborCostInRange(settings, days, startKey, endKey);
   const costPerMacaron = unitsSold > 0 ? laborCost / unitsSold : null;
   const ranking = flavorRanking(days, flavors, startKey, endKey);
+  const revenue = revenueInRange(settings, days, startKey, endKey);
 
   return (
     <>
@@ -40,12 +42,17 @@ export default function MonthTab({ settings, days, payments, anchor, onAnchorCha
 
       <div className="stat-grid">
         <StatTile label="Units sold" value={unitsSold} accent="raspberry" />
-        <StatTile label="Freezer level" value={freezerEnd} sub="at month end" accent="pistachio" />
+        <StatTile
+          label="Revenue"
+          value={`$${revenue.toFixed(0)}`}
+          sub={`${freezerEnd} left in freezer`}
+          accent="pistachio"
+        />
         <StatTile label="Scheduled hours" value={scheduledHours.toFixed(1)} />
         <StatTile
           label="Labor cost"
           value={`$${laborCost.toFixed(0)}`}
-          sub={costPerMacaron !== null ? `$${costPerMacaron.toFixed(2)} / macaron` : "no sales yet"}
+          sub={costPerMacaron !== null ? `$${costPerMacaron.toFixed(2)} / unit` : "no sales yet"}
         />
       </div>
 
