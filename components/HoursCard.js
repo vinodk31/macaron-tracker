@@ -4,20 +4,29 @@ import {
   getShiftsForDate,
   isClosedForDate,
   isUsingDefaultHours,
-  scheduledHoursForDate,
-  laborCostForDate,
   shiftHours,
   staffEarningsInRange,
 } from "@/lib/model";
 
 export default function HoursCard({ settings, days, isStaff, dateKey, onUpdateDay }) {
-  const shifts = getShiftsForDate(settings, days, dateKey);
+  const allShifts = getShiftsForDate(settings, days, dateKey);
+  // An employee edits their own hours and nothing else, so a shift that isn't
+  // theirs (including an unassigned default one) has no business being here:
+  // the server would reject the edit anyway.
+  const shifts = isStaff
+    ? allShifts.filter((s) => s.staffId === settings.staff[0]?.id)
+    : allShifts;
   const closed = isClosedForDate(settings, days, dateKey);
   const usingDefault = isUsingDefaultHours(days, dateKey);
-  const totalHours = scheduledHoursForDate(settings, days, dateKey);
-  const laborCost = laborCostForDate(settings, days, dateKey);
+  // Derived from the same list that is rendered, so the summary can't drift
+  // from the shifts above it.
+  const totalHours = shifts.reduce((sum, s) => sum + shiftHours(s), 0);
+  const laborCost = shifts.reduce((sum, s) => {
+    const staff = settings.staff.find((p) => p.id === s.staffId);
+    return sum + shiftHours(s) * (staff ? staff.rate : 0);
+  }, 0);
   const owedToday = staffEarningsInRange(settings, days, dateKey, dateKey).filter(
-    (row) => row.earned > 0
+    (row) => row.earned > 0 && (!isStaff || row.staff.id === settings.staff[0]?.id)
   );
 
   function setOverride(nextHours) {
@@ -114,7 +123,7 @@ export default function HoursCard({ settings, days, isStaff, dateKey, onUpdateDa
                     <option value="">Unassigned</option>
                     {settings.staff.map((s) => (
                       <option key={s.id} value={s.id}>
-                        {s.name}
+                        {s.active === false ? `${s.name} (inactive)` : s.name}
                       </option>
                     ))}
                   </select>

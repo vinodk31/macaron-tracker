@@ -91,15 +91,33 @@ a {
 
 .topbar {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   padding: 18px 16px 8px;
   gap: 8px;
 }
 
+.topbar-title {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .topbar h1 {
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sign-out-btn {
+  flex-shrink: 0;
+  border: 1px solid var(--hairline);
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-size: 0.72rem;
 }
 
 .save-indicator {
@@ -1039,6 +1057,22 @@ textarea.text-input {
 .login-switch {
   width: 100%;
   font-size: 0.78rem;
+}
+
+.login-notice {
+  margin: 0;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  background: var(--pistachio-bg);
+  border-radius: var(--radius-md);
+  padding: 9px 12px;
+}
+
+.active-toggle {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  gap: 4px;
 }
 
 .pin-input {

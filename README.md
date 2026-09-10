@@ -31,6 +31,8 @@ The `app_state` table is created automatically on first use — there's no migra
 - **Two kinds of access.** The owner signs in with `APP_PASSWORD` and gets the whole app. Staff sign in with a 5-digit PIN (issued in Setup) and only ever see freezer counts, their own shifts and their own pay. The session cookie carries the role, signed with `AUTH_SECRET`.
 - **Permissions are enforced server-side**, not in the UI. `/api/state` filters the payload down to the signed-in employee before it leaves the server, and rewrites of settings, other people's shifts or any payment are dropped from staff writes rather than trusted. Hiding things in the browser alone would leave the data one devtools glance away.
 - **Login is rate limited.** A 5-digit PIN is only 90,000 possibilities, so repeated failures from one address lock it out with escalating backoff (counters live in Postgres, since serverless instances share no memory).
+- **Sessions end three ways**: the sign-out button, five minutes of inactivity, or the 12-hour cookie expiry. The idle timer compares timestamps on an interval rather than running one long timer, so a backgrounded tab still logs out.
+- **Staff can be switched inactive** in Setup. Their PIN stops working and they are no longer auto-scheduled, but anything they are still owed stays on the books.
 
 ## Tabs
 

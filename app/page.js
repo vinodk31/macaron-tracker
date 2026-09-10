@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { UnauthorizedError, load, save } from "@/lib/storage";
+import { logout } from "@/lib/auth";
+import { useIdleTimeout } from "@/lib/useIdleTimeout";
 import { defaultState, makeId, normalizeState, roundMoney } from "@/lib/model";
 import {
   addDays,
@@ -21,6 +23,15 @@ import SetupTab from "@/components/SetupTab";
 import LoginGate from "@/components/LoginGate";
 import MyPayTab from "@/components/MyPayTab";
 
+const IDLE_LIMIT_MS = 5 * 60 * 1000;
+
+function greeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
 const ADMIN_TABS = [
   { id: "day", label: "Day" },
   { id: "week", label: "Week" },
@@ -38,6 +49,7 @@ export default function Home() {
   const [data, setData] = useState(null);
   const [status, setStatus] = useState("loading");
   const [role, setRole] = useState("admin");
+  const [signOutNotice, setSignOutNotice] = useState("");
   const [loadError, setLoadError] = useState("");
   const [saveState, setSaveState] = useState("idle");
   const [tab, setTab] = useState("day");
@@ -74,12 +86,34 @@ export default function Home() {
   const reload = useCallback(() => {
     setStatus("loading");
     setLoadError("");
+    setSignOutNotice("");
     runLoad();
   }, [runLoad]);
+
+  const endSession = useCallback(async (notice) => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    await logout();
+    lastPersisted.current = null;
+    setData(null);
+    setSignOutNotice(notice);
+    setStatus("locked");
+  }, []);
+
+  const handleSignOut = useCallback(() => endSession(""), [endSession]);
+  const handleIdle = useCallback(
+    () => endSession("Signed out after 5 minutes of inactivity."),
+    [endSession]
+  );
 
   useEffect(() => {
     runLoad();
   }, [runLoad]);
+
+  useIdleTimeout({
+    timeoutMs: IDLE_LIMIT_MS,
+    enabled: status === "ready",
+    onIdle: handleIdle,
+  });
 
   useEffect(() => {
     if (status !== "ready" || !data || data === lastPersisted.current) return;
@@ -154,7 +188,7 @@ export default function Home() {
   }, []);
 
   if (status === "locked") {
-    return <LoginGate onSignedIn={reload} />;
+    return <LoginGate onSignedIn={reload} notice={signOutNotice} />;
   }
 
   if (status === "error") {
@@ -184,15 +218,21 @@ export default function Home() {
 
   const isStaff = role === "staff";
   const tabs = isStaff ? STAFF_TABS : ADMIN_TABS;
+  const staffName = data.settings.staff[0]?.name || "there";
 
   return (
     <div className="app">
       <header className="topbar">
-        <h1>{data.settings.shopName || "Macaron Tracker"}</h1>
-        <span className="save-indicator">
-          <span className={`save-dot${saveState === "saving" ? " saving" : ""}${saveState === "error" ? " failed" : ""}`} />
-          {saveState === "saving" ? "Saving…" : saveState === "error" ? "Save failed" : "Saved"}
-        </span>
+        <div className="topbar-title">
+          <h1>{isStaff ? `${greeting()}, ${staffName}` : data.settings.shopName || "Macaron Tracker"}</h1>
+          <span className="save-indicator">
+            <span className={`save-dot${saveState === "saving" ? " saving" : ""}${saveState === "error" ? " failed" : ""}`} />
+            {saveState === "saving" ? "Saving…" : saveState === "error" ? "Save failed" : "Saved"}
+          </span>
+        </div>
+        <button className="btn btn-ghost btn-sm sign-out-btn" onClick={handleSignOut}>
+          Sign out
+        </button>
       </header>
 
       <main className="main">

@@ -42,6 +42,7 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
           name: "New staff",
           rate: 15,
           isDefault: s.staff.length === 0,
+          active: true,
           pin: makePin(s.staff),
         },
       ],
@@ -217,6 +218,14 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
               value={p.rate}
               onChange={(e) => updateStaff(p.id, { rate: Number(e.target.value) || 0 })}
             />
+            <label className="checkbox-label active-toggle" title="Inactive staff cannot sign in">
+              <input
+                type="checkbox"
+                checked={p.active !== false}
+                onChange={(e) => updateStaff(p.id, { active: e.target.checked })}
+              />
+              Active
+            </label>
             <button className="btn-ghost" onClick={() => removeStaff(p.id)} aria-label="Remove staff">
               ✕
             </button>
@@ -228,7 +237,13 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
             {settings.staff.map((p) => (
               <div className="pin-row" key={p.id}>
                 <span className="pin-name">{p.name}</span>
-                {p.pin ? <code className="pin-code">{p.pin}</code> : <span className="pin-none">no PIN</span>}
+                {p.active === false ? (
+                  <span className="pin-none">inactive</span>
+                ) : p.pin ? (
+                  <code className="pin-code">{p.pin}</code>
+                ) : (
+                  <span className="pin-none">no PIN</span>
+                )}
                 <button className="btn btn-sm" onClick={() => regeneratePin(p.id)}>
                   {p.pin ? "New PIN" : "Generate"}
                 </button>
@@ -236,7 +251,8 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
             ))}
             <p className="card-subtitle">
               Staff sign in with these 5 digits via the Staff PIN button on the login screen. They
-              only ever see their own pay and hours. Issuing a new PIN immediately retires the old one.
+              only ever see their own pay and hours. Issuing a new PIN immediately retires the old one,
+              and switching someone to inactive stops their PIN working without touching what they are owed.
             </p>
           </>
         )}
