@@ -10,7 +10,7 @@ import {
   staffEarningsInRange,
 } from "@/lib/model";
 
-export default function HoursCard({ settings, days, dateKey, onUpdateDay }) {
+export default function HoursCard({ settings, days, isStaff, dateKey, onUpdateDay }) {
   const shifts = getShiftsForDate(settings, days, dateKey);
   const closed = isClosedForDate(settings, days, dateKey);
   const usingDefault = isUsingDefaultHours(days, dateKey);
@@ -64,6 +64,8 @@ export default function HoursCard({ settings, days, dateKey, onUpdateDay }) {
         <h2>Hours</h2>
         {usingDefault ? (
           <span className="default-badge">Default</span>
+        ) : isStaff ? (
+          <span className="override-badge">Edited</span>
         ) : (
           <div className="btn-row">
             <span className="override-badge">Edited</span>
@@ -74,10 +76,12 @@ export default function HoursCard({ settings, days, dateKey, onUpdateDay }) {
         )}
       </div>
 
-      <label className="checkbox-label" style={{ justifyContent: "flex-start", marginBottom: 8 }}>
-        <input type="checkbox" checked={closed} onChange={(e) => toggleClosed(e.target.checked)} />
-        Closed today
-      </label>
+      {!isStaff && (
+        <label className="checkbox-label" style={{ justifyContent: "flex-start", marginBottom: 8 }}>
+          <input type="checkbox" checked={closed} onChange={(e) => toggleClosed(e.target.checked)} />
+          Closed today
+        </label>
+      )}
 
       {closed ? (
         <p className="closed-banner">Kiosk closed</p>
@@ -100,20 +104,22 @@ export default function HoursCard({ settings, days, dateKey, onUpdateDay }) {
                   onChange={(e) => updateShift(i, { end: e.target.value })}
                 />
               </div>
-              <div className="shift-staff">
-                <select
-                  className="text-input"
-                  value={shift.staffId || ""}
-                  onChange={(e) => updateShift(i, { staffId: e.target.value || null })}
-                >
-                  <option value="">Unassigned</option>
-                  {settings.staff.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {!isStaff && (
+                <div className="shift-staff">
+                  <select
+                    className="text-input"
+                    value={shift.staffId || ""}
+                    onChange={(e) => updateShift(i, { staffId: e.target.value || null })}
+                  >
+                    <option value="">Unassigned</option>
+                    {settings.staff.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               {shifts.length > 1 && (
                 <button className="btn-ghost" onClick={() => removeShift(i)} aria-label="Remove shift">
                   ✕

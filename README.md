@@ -28,7 +28,9 @@ The `app_state` table is created automatically on first use — there's no migra
 - **Inventory is a freezer count.** Each day you enter one integer per flavor: what's physically in the freezer. There's no "sold" field — sold and restocked are derived by comparing each day's count to the previous *recorded* count for that flavor (days with no count are skipped, not treated as zero).
 - **Hours auto-fill.** Every day gets a shift derived from the store's weekday hours plus prep/close-out buffers, with no data entry needed. Editing the default hours in Setup retroactively updates every day that hasn't been individually overridden.
 - **Storage** lives entirely behind `lib/storage.js` (`load()`/`save()`), which talks to `/api/state`. The whole `{ settings, days }` object is one JSONB row in Postgres, so the API is just a read and a write. Data entered before the migration is picked up from `localStorage` once and uploaded, so nothing is lost.
-- **Access** is gated by a password. `/api/login` checks it against `APP_PASSWORD` and sets a signed, HttpOnly session cookie; `/api/state` returns 401 without it and the UI shows the sign-in screen.
+- **Two kinds of access.** The owner signs in with `APP_PASSWORD` and gets the whole app. Staff sign in with a 5-digit PIN (issued in Setup) and only ever see freezer counts, their own shifts and their own pay. The session cookie carries the role, signed with `AUTH_SECRET`.
+- **Permissions are enforced server-side**, not in the UI. `/api/state` filters the payload down to the signed-in employee before it leaves the server, and rewrites of settings, other people's shifts or any payment are dropped from staff writes rather than trusted. Hiding things in the browser alone would leave the data one devtools glance away.
+- **Login is rate limited.** A 5-digit PIN is only 90,000 possibilities, so repeated failures from one address lock it out with escalating backoff (counters live in Postgres, since serverless instances share no memory).
 
 ## Tabs
 
