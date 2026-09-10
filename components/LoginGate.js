@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { login } from "@/lib/auth";
+import RegisterForm from "./RegisterForm";
 
 export default function LoginGate({ onSignedIn, notice }) {
   const [mode, setMode] = useState("owner");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
@@ -15,6 +17,7 @@ export default function LoginGate({ onSignedIn, notice }) {
   function switchTo(nextMode) {
     setMode(nextMode);
     setError("");
+    setEmail("");
     setPassword("");
     setPin("");
   }
@@ -24,7 +27,7 @@ export default function LoginGate({ onSignedIn, notice }) {
     setBusy(true);
     setError("");
     try {
-      const result = await login(isPinMode ? { pin } : { password });
+      const result = await login(isPinMode ? { pin } : { email, password });
       if (result.ok) {
         onSignedIn();
         return;
@@ -40,6 +43,10 @@ export default function LoginGate({ onSignedIn, notice }) {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (mode === "register") {
+    return <RegisterForm onRegistered={onSignedIn} onCancel={() => switchTo("owner")} />;
   }
 
   return (
@@ -64,18 +71,31 @@ export default function LoginGate({ onSignedIn, notice }) {
             />
           </div>
         ) : (
-          <div className="field">
-            <label htmlFor="password">Owner password</label>
-            <input
-              id="password"
-              className="text-input"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoFocus
-            />
-          </div>
+          <>
+            <div className="field">
+              <label htmlFor="email">Email</label>
+              <input
+                id="email"
+                className="text-input"
+                type="email"
+                autoComplete="username"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="password">Password</label>
+              <input
+                id="password"
+                className="text-input"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+          </>
         )}
 
         {error && <p className="login-error">{error}</p>}
@@ -95,6 +115,15 @@ export default function LoginGate({ onSignedIn, notice }) {
         >
           {isPinMode ? "Owner sign-in" : "Staff PIN"}
         </button>
+        {!isPinMode && (
+          <button
+            className="btn btn-ghost login-switch"
+            type="button"
+            onClick={() => switchTo("register")}
+          >
+            Register a new location
+          </button>
+        )}
       </form>
     </div>
   );
