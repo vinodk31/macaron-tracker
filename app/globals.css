@@ -1181,6 +1181,35 @@ textarea.text-input {
   font-style: italic;
 }
 
+.pin-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.pin-edit-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 1.05rem;
+  letter-spacing: 0.3em;
+}
+
+.pin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.pin-saved {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--pistachio-deep);
+}
+
 @media (min-width: 420px) {
   .flavor-table-head,
   .flavor-row {
