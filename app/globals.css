@@ -388,12 +388,34 @@ a {
   border-bottom: none;
 }
 
+.col-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .flavor-name {
   font-weight: 600;
   font-size: 0.86rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Tray size under the flavor name, and the piece equivalent under the box you
+   type the tray count into. */
+.flavor-sub,
+.count-sub {
+  font-size: 0.64rem;
+  font-weight: 600;
+  color: var(--ink-faint);
+  letter-spacing: 0.02em;
+}
+
+.count-sub {
+  display: block;
+  text-align: center;
+  margin-top: 3px;
 }
 
 .col {
@@ -1229,6 +1251,27 @@ textarea.text-input {
   color: var(--pistachio-deep);
   padding: 10px 4px 4px;
   border-bottom: 1px solid var(--hairline);
+}
+
+.tray-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.tray-input {
+  width: 56px;
+  text-align: center;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.tray-suffix {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ink-faint);
+  white-space: nowrap;
 }
 
 .product-block {

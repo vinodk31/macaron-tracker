@@ -7,27 +7,45 @@ import {
   flavorCountAsOf,
   flavorSoldInRange,
   flavorsForProduct,
+  formatTrays,
+  isTrayed,
   lastKnownCountBefore,
+  trayCapacity,
+  traysToUnits,
+  unitsToTrays,
 } from "@/lib/model";
 import HoursCard from "./HoursCard";
 
 export default function DayTab({ settings, days, isStaff, dateKey, onDateChange, onUpdateDay }) {
   const [periodId, setPeriodId] = useState("yesterday");
+  // What is being typed right now, before it becomes a number. Without it,
+  // "4." on a trayed flavor would round-trip through the stored piece count
+  // and lose the dot mid-keystroke.
+  const [draft, setDraft] = useState(null);
   const period = COMPARISON_PERIODS.find((p) => p.id === periodId) || COMPARISON_PERIODS[0];
   const comparisonKey = period.offset(dateKey);
   const day = days[dateKey] || {};
 
-  function setCount(flavorId, raw) {
+  function setCount(flavor, raw) {
+    setDraft({ flavorId: flavor.id, dateKey, text: raw });
     onUpdateDay(dateKey, (d) => {
       const counts = { ...(d.counts || {}) };
       if (raw === "") {
-        delete counts[flavorId];
+        delete counts[flavor.id];
       } else {
         const n = Number(raw);
-        if (!Number.isNaN(n)) counts[flavorId] = n;
+        if (!Number.isNaN(n)) counts[flavor.id] = traysToUnits(n, flavor);
       }
       return { ...d, counts };
     });
+  }
+
+  // Trays may be typed as a part tray ("4.5"); pieces stay whole numbers.
+  function sanitize(raw, trayed) {
+    const cleaned = raw.replace(trayed ? /[^0-9.]/g : /[^0-9]/g, "");
+    if (!trayed) return cleaned;
+    const [whole, ...rest] = cleaned.split(".");
+    return rest.length ? `${whole}.${rest.join("")}` : whole;
   }
 
   function setNote(note) {
@@ -69,6 +87,13 @@ export default function DayTab({ settings, days, isStaff, dateKey, onDateChange,
           ))}
         </div>
 
+        {settings.flavors.some(isTrayed) && (
+          <p className="card-subtitle" style={{ marginTop: 0 }}>
+            Trayed flavors are counted in trays — part trays are fine (4.5). Sold is always in
+            pieces.
+          </p>
+        )}
+
         <div className="flavor-table">
           <div className="flavor-table-head">
             <span>Flavor</span>
@@ -83,6 +108,11 @@ export default function DayTab({ settings, days, isStaff, dateKey, onDateChange,
               <div key={product.id}>
                 <div className="product-heading">{product.name}</div>
                 {flavors.map((flavor) => {
+                  const trayed = isTrayed(flavor);
+                  // Freezer columns are in whatever the freezer is counted in;
+                  // sold stays in pieces, since that is what gets priced.
+                  const asEntered = (units) =>
+                    trayed ? formatTrays(unitsToTrays(units, flavor)) : String(units);
                   const was = flavorCountAsOf(days, flavor.id, comparisonKey);
                   const { sold, restocked } = flavorSoldInRange(
                     days,
@@ -90,17 +120,27 @@ export default function DayTab({ settings, days, isStaff, dateKey, onDateChange,
                     addDays(comparisonKey, 1),
                     dateKey
                   );
-                  const current =
+                  const stored =
                     day.counts && typeof day.counts[flavor.id] === "number"
                       ? day.counts[flavor.id]
-                      : "";
+                      : null;
+                  const editing =
+                    draft && draft.flavorId === flavor.id && draft.dateKey === dateKey;
+                  const current = editing ? draft.text : stored === null ? "" : asEntered(stored);
                   const placeholder =
-                    current === "" ? lastKnownCountBefore(days, flavor.id, dateKey) : undefined;
+                    stored === null ? lastKnownCountBefore(days, flavor.id, dateKey) : undefined;
 
                   return (
                     <div className="flavor-row" key={flavor.id}>
-                      <span className="col col-name flavor-name">{flavor.name}</span>
-                      <span className="col col-was">{typeof was === "number" ? was : "–"}</span>
+                      <span className="col col-name">
+                        <span className="flavor-name">{flavor.name}</span>
+                        {trayed && (
+                          <span className="flavor-sub">{trayCapacity(flavor)} / tray</span>
+                        )}
+                      </span>
+                      <span className="col col-was">
+                        {typeof was === "number" ? asEntered(was) : "–"}
+                      </span>
                       <span className="col col-sold">
                         <span>{sold}</span>
                         {restocked > 0 && <span className="restock-badge">+{restocked}</span>}
@@ -109,14 +149,19 @@ export default function DayTab({ settings, days, isStaff, dateKey, onDateChange,
                         <input
                           className="count-input"
                           type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
+                          inputMode={trayed ? "decimal" : "numeric"}
+                          pattern={trayed ? "[0-9.]*" : "[0-9]*"}
+                          aria-label={`${flavor.name} — ${trayed ? "trays" : "pieces"} in freezer`}
                           value={current}
-                          placeholder={typeof placeholder === "number" ? String(placeholder) : ""}
-                          onChange={(e) =>
-                            setCount(flavor.id, e.target.value.replace(/[^0-9]/g, ""))
+                          placeholder={
+                            typeof placeholder === "number" ? asEntered(placeholder) : ""
                           }
+                          onChange={(e) => setCount(flavor, sanitize(e.target.value, trayed))}
+                          onBlur={() => setDraft(null)}
                         />
+                        {trayed && stored !== null && (
+                          <span className="count-sub">= {stored}</span>
+                        )}
                       </span>
                     </div>
                   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { makeId } from "@/lib/model";
+import { makeId, trayCapacity } from "@/lib/model";
 import { issuePin, setPin } from "@/lib/pins";
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -125,17 +125,17 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
     });
   }
 
-  function updateFlavor(id, name) {
+  function updateFlavor(id, patch) {
     onUpdateSettings((s) => ({
       ...s,
-      flavors: s.flavors.map((f) => (f.id === id ? { ...f, name } : f)),
+      flavors: s.flavors.map((f) => (f.id === id ? { ...f, ...patch } : f)),
     }));
   }
 
   function addFlavor(productId) {
     onUpdateSettings((s) => ({
       ...s,
-      flavors: [...s.flavors, { id: makeId("flavor"), productId, name: "New flavor" }],
+      flavors: [...s.flavors, { id: makeId("flavor"), productId, name: "New flavor", perTray: 1 }],
     }));
   }
 
@@ -417,8 +417,22 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
                     className="text-input grow"
                     type="text"
                     value={f.name}
-                    onChange={(e) => updateFlavor(f.id, e.target.value)}
+                    onChange={(e) => updateFlavor(f.id, { name: e.target.value })}
                   />
+                  <div className="tray-field">
+                    <input
+                      className="number-input tray-input"
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={trayCapacity(f)}
+                      aria-label={`Pieces per tray for ${f.name}`}
+                      onChange={(e) =>
+                        updateFlavor(f.id, { perTray: Math.max(1, Math.floor(Number(e.target.value) || 1)) })
+                      }
+                    />
+                    <span className="tray-suffix">/ tray</span>
+                  </div>
                   <button
                     className="btn-ghost"
                     onClick={() => removeFlavor(f.id)}
@@ -428,6 +442,12 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
                   </button>
                 </div>
               ))}
+              {flavors.length > 0 && (
+                <p className="card-subtitle">
+                  How many pieces one tray of that flavor holds — 36, 24, or 1 to count it singly.
+                  It changes how you type the freezer count, never what a day already logged means.
+                </p>
+              )}
               <div className="btn-row" style={{ marginTop: 6 }}>
                 <button className="btn btn-sm" onClick={() => addFlavor(product.id)}>
                   + Add flavor
