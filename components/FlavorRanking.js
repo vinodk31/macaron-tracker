@@ -1,7 +1,7 @@
 export default function FlavorRanking({ ranking }) {
-  const max = Math.max(1, ...ranking.map((r) => r.sold));
-  if (ranking.every((r) => r.sold === 0)) {
-    return <p className="empty-state">No sales recorded for this period yet.</p>;
+  const max = Math.max(1, ...ranking.map((r) => r.taken));
+  if (ranking.every((r) => r.taken === 0)) {
+    return <p className="empty-state">Nothing came out of the freezer in this period.</p>;
   }
   return (
     <div>
@@ -11,10 +11,10 @@ export default function FlavorRanking({ ranking }) {
           <span className="ranking-bar-track">
             <span
               className="ranking-bar-fill"
-              style={{ width: `${(r.sold / max) * 100}%` }}
+              style={{ width: `${(r.taken / max) * 100}%` }}
             />
           </span>
-          <span className="ranking-value">{r.sold}</span>
+          <span className="ranking-value">{r.taken}</span>
         </div>
       ))}
     </div>

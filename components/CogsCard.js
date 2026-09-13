@@ -6,7 +6,7 @@ export default function CogsCard({ settings, days, payments, startKey, endKey, t
   const cogs = monthlyCogs(settings, days, payments, startKey, endKey);
   const outstanding = totalOutstanding(settings, days, payments, today);
   const paidRows = cogs.wagesByStaff.filter((row) => row.paid > 0);
-  const soldProducts = cogs.byProduct.filter((row) => row.units > 0);
+  const productsOut = cogs.byProduct.filter((row) => row.units > 0);
   const unpriced = hasUnpricedProducts(settings);
 
   return (
@@ -21,11 +21,11 @@ export default function CogsCard({ settings, days, payments, startKey, endKey, t
         </p>
       )}
 
-      <div className="section-label">Sold this month</div>
-      {soldProducts.length === 0 ? (
-        <p className="empty-state">Nothing sold yet this month.</p>
+      <div className="section-label">Out of the freezer this month</div>
+      {productsOut.length === 0 ? (
+        <p className="empty-state">Nothing has left the freezer yet this month.</p>
       ) : (
-        soldProducts.map(({ product, units, revenue }) => (
+        productsOut.map(({ product, units, revenue }) => (
           <div className="cogs-row" key={product.id}>
             <span>
               {product.name}
@@ -61,7 +61,7 @@ export default function CogsCard({ settings, days, payments, startKey, endKey, t
       <div className="cogs-row subtotal">
         <span>
           Ingredients
-          <span className="cogs-note">{cogs.unitsSold} sold</span>
+          <span className="cogs-note">{cogs.unitsTaken} pieces</span>
         </span>
         <span className="cogs-value">${cogs.ingredients.toFixed(2)}</span>
       </div>
@@ -75,7 +75,7 @@ export default function CogsCard({ settings, days, payments, startKey, endKey, t
         <span className="cogs-value">${cogs.margin.toFixed(2)}</span>
       </div>
       {cogs.perMacaron !== null && (
-        <p className="card-subtitle">${cogs.perMacaron.toFixed(2)} cost per unit sold</p>
+        <p className="card-subtitle">${cogs.perMacaron.toFixed(2)} cost per piece taken out</p>
       )}
 
       <div className={`balance-bar${isSettled(outstanding) ? " clear" : ""}`}>

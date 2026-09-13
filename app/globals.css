@@ -388,12 +388,34 @@ a {
   border-bottom: none;
 }
 
+.col-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .flavor-name {
   font-weight: 600;
   font-size: 0.86rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Tray size under the flavor name, and the piece equivalent under the box you
+   type the tray count into. */
+.flavor-sub,
+.count-sub {
+  font-size: 0.64rem;
+  font-weight: 600;
+  color: var(--ink-faint);
+  letter-spacing: 0.02em;
+}
+
+.count-sub {
+  display: block;
+  text-align: center;
+  margin-top: 3px;
 }
 
 .col {
@@ -404,7 +426,7 @@ a {
   color: var(--ink-soft);
 }
 
-.col-sold {
+.col-taken {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -689,7 +711,7 @@ textarea.text-input {
   transition: background 0.15s ease;
 }
 
-.bar-col .bar.sold {
+.bar-col .bar.taken {
   background: var(--raspberry);
 }
 
@@ -730,7 +752,7 @@ textarea.text-input {
   display: inline-block;
 }
 
-.legend-swatch.sold {
+.legend-swatch.taken {
   background: var(--raspberry);
 }
 
@@ -1181,6 +1203,35 @@ textarea.text-input {
   font-style: italic;
 }
 
+.pin-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.pin-edit-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 1.05rem;
+  letter-spacing: 0.3em;
+}
+
+.pin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.pin-saved {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--pistachio-deep);
+}
+
 @media (min-width: 420px) {
   .flavor-table-head,
   .flavor-row {
@@ -1200,6 +1251,27 @@ textarea.text-input {
   color: var(--pistachio-deep);
   padding: 10px 4px 4px;
   border-bottom: 1px solid var(--hairline);
+}
+
+.tray-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.tray-input {
+  width: 56px;
+  text-align: center;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.tray-suffix {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ink-faint);
+  white-space: nowrap;
 }
 
 .product-block {

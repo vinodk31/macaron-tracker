@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { makeId } from "@/lib/model";
-import { issuePin } from "@/lib/pins";
+import { makeId, trayCapacity } from "@/lib/model";
+import { issuePin, setPin } from "@/lib/pins";
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DISPLAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
@@ -10,6 +10,8 @@ const DISPLAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 export default function SetupTab({ settings, onUpdateSettings, onEraseAllData }) {
   const [confirmingErase, setConfirmingErase] = useState(false);
   const [pinError, setPinError] = useState("");
+  const [editingPin, setEditingPin] = useState(null);
+  const [pinDraft, setPinDraft] = useState("");
 
   function updateHours(wd, patch) {
     onUpdateSettings((s) => ({ ...s, hours: { ...s.hours, [wd]: { ...s.hours[wd], ...patch } } }));
@@ -74,6 +76,29 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
     }));
   }
 
+  function startEditingPin(id, current) {
+    setPinError("");
+    setEditingPin(id);
+    setPinDraft(current || "");
+  }
+
+  // The server owns uniqueness across locations, so a chosen PIN is checked
+  // there before it goes into settings.
+  async function saveChosenPin(id) {
+    setPinError("");
+    const result = await setPin({ staffId: id, pin: pinDraft });
+    if (!result.ok) {
+      setPinError(result.error);
+      return;
+    }
+    onUpdateSettings((s) => ({
+      ...s,
+      staff: s.staff.map((p) => (p.id === id ? { ...p, pin: result.pin } : p)),
+    }));
+    setEditingPin(null);
+    setPinDraft("");
+  }
+
   function removeStaff(id) {
     onUpdateSettings((s) => ({ ...s, staff: s.staff.filter((p) => p.id !== id) }));
   }
@@ -100,17 +125,17 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
     });
   }
 
-  function updateFlavor(id, name) {
+  function updateFlavor(id, patch) {
     onUpdateSettings((s) => ({
       ...s,
-      flavors: s.flavors.map((f) => (f.id === id ? { ...f, name } : f)),
+      flavors: s.flavors.map((f) => (f.id === id ? { ...f, ...patch } : f)),
     }));
   }
 
   function addFlavor(productId) {
     onUpdateSettings((s) => ({
       ...s,
-      flavors: [...s.flavors, { id: makeId("flavor"), productId, name: "New flavor" }],
+      flavors: [...s.flavors, { id: makeId("flavor"), productId, name: "New flavor", perTray: 1 }],
     }));
   }
 
@@ -262,24 +287,56 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
             <div className="section-label" style={{ marginTop: 12 }}>Sign-in PINs</div>
             {pinError && <p className="login-error">{pinError}</p>}
             {settings.staff.map((p) => (
-              <div className="pin-row" key={p.id}>
-                <span className="pin-name">{p.name}</span>
-                {p.active === false ? (
-                  <span className="pin-none">inactive</span>
-                ) : p.pin ? (
-                  <code className="pin-code">{p.pin}</code>
-                ) : (
-                  <span className="pin-none">no PIN</span>
+              <div key={p.id}>
+                <div className="pin-row">
+                  <span className="pin-name">{p.name}</span>
+                  {p.active === false ? (
+                    <span className="pin-none">inactive</span>
+                  ) : p.pin ? (
+                    <code className="pin-code">{p.pin}</code>
+                  ) : (
+                    <span className="pin-none">no PIN</span>
+                  )}
+                  <button className="btn btn-sm" onClick={() => startEditingPin(p.id, p.pin)}>
+                    Set
+                  </button>
+                  <button className="btn btn-sm" onClick={() => regeneratePin(p.id)}>
+                    Random
+                  </button>
+                </div>
+                {editingPin === p.id && (
+                  <div className="pin-edit-row">
+                    <input
+                      className="text-input pin-input pin-edit-input"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={5}
+                      aria-label={`PIN for ${p.name}`}
+                      value={pinDraft}
+                      onChange={(e) => setPinDraft(e.target.value.replace(/[^0-9]/g, ""))}
+                      autoFocus
+                    />
+                    <button
+                      className="btn btn-sm btn-primary"
+                      disabled={pinDraft.length !== 5}
+                      onClick={() => saveChosenPin(p.id)}
+                    >
+                      Save
+                    </button>
+                    <button className="btn btn-sm" onClick={() => setEditingPin(null)}>
+                      Cancel
+                    </button>
+                  </div>
                 )}
-                <button className="btn btn-sm" onClick={() => regeneratePin(p.id)}>
-                  {p.pin ? "New PIN" : "Generate"}
-                </button>
               </div>
             ))}
             <p className="card-subtitle">
               Staff sign in with these 5 digits via the Staff PIN button on the login screen. They
-              only ever see their own pay and hours. Issuing a new PIN immediately retires the old one,
-              and switching someone to inactive stops their PIN working without touching what they are owed.
+              only ever see their own pay and hours. <strong>Set</strong> picks a specific number,
+              <strong> Random</strong> issues an unused one; either way the old PIN stops working at
+              once. Staff can change their own PIN from their Account tab, and it stays visible here.
+              Switching someone to inactive stops their PIN working without touching what they are owed.
             </p>
           </>
         )}
@@ -360,8 +417,22 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
                     className="text-input grow"
                     type="text"
                     value={f.name}
-                    onChange={(e) => updateFlavor(f.id, e.target.value)}
+                    onChange={(e) => updateFlavor(f.id, { name: e.target.value })}
                   />
+                  <div className="tray-field">
+                    <input
+                      className="number-input tray-input"
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={trayCapacity(f)}
+                      aria-label={`Pieces per tray for ${f.name}`}
+                      onChange={(e) =>
+                        updateFlavor(f.id, { perTray: Math.max(1, Math.floor(Number(e.target.value) || 1)) })
+                      }
+                    />
+                    <span className="tray-suffix">/ tray</span>
+                  </div>
                   <button
                     className="btn-ghost"
                     onClick={() => removeFlavor(f.id)}
@@ -371,6 +442,12 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
                   </button>
                 </div>
               ))}
+              {flavors.length > 0 && (
+                <p className="card-subtitle">
+                  How many pieces one tray of that flavor holds — 36, 24, or 1 to count it singly.
+                  It changes how you type the freezer count, never what a day already logged means.
+                </p>
+              )}
               <div className="btn-row" style={{ marginTop: 6 }}>
                 <button className="btn btn-sm" onClick={() => addFlavor(product.id)}>
                   + Add flavor
