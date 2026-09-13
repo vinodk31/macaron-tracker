@@ -76,10 +76,14 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
     }));
   }
 
-  function startEditingPin(id, current) {
+  // The box opens empty with the current PIN greyed behind it. Pre-filling it
+  // looked helpful and wasn't: five digits is already the maximum the field
+  // accepts, so every key you typed was silently dropped and Save re-submitted
+  // the number that was already there.
+  function startEditingPin(id) {
     setPinError("");
     setEditingPin(id);
-    setPinDraft(current || "");
+    setPinDraft("");
   }
 
   // The server owns uniqueness across locations, so a chosen PIN is checked
@@ -297,7 +301,7 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
                   ) : (
                     <span className="pin-none">no PIN</span>
                   )}
-                  <button className="btn btn-sm" onClick={() => startEditingPin(p.id, p.pin)}>
+                  <button className="btn btn-sm" onClick={() => startEditingPin(p.id)}>
                     Set
                   </button>
                   <button className="btn btn-sm" onClick={() => regeneratePin(p.id)}>
@@ -311,8 +315,10 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
+                      autoComplete="off"
                       maxLength={5}
-                      aria-label={`PIN for ${p.name}`}
+                      aria-label={`New PIN for ${p.name}`}
+                      placeholder={p.pin || "5 digits"}
                       value={pinDraft}
                       onChange={(e) => setPinDraft(e.target.value.replace(/[^0-9]/g, ""))}
                       autoFocus
