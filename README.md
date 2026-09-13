@@ -28,8 +28,9 @@ Tables are created automatically on first use — there's no migration step, and
 ## How it works
 
 - **Products carry price and cost; flavors are what you count.** Macarons, Crambellos and Cake pops each have their own price and ingredient cost, and every flavor under a product inherits them — so raising macaron prices is one edit, not one per flavor. Revenue, COGS and gross margin follow from that.
-- **Inventory is a freezer count.** Each day you enter one number per flavor: what's physically in the freezer. There's no "sold" field — sold and restocked are derived by comparing each day's count to the previous *recorded* count for that flavor (days with no count are skipped, not treated as zero).
-- **Count by the tray.** Each flavor has a tray size — 36, 24, or 1 to count singles — set in Setup, and the freezer columns switch to trays for it. Part trays are fine: `4.5` of a 24 tray is 108. Counts are always *stored* in pieces, which is what everything is priced and sold in, so changing a tray size changes how the number is typed and read back and never what a day already logged means.
+- **Inventory is a freezer count.** Each day you enter one number per flavor: what's physically in the freezer. Nothing is typed in about sales — what was **taken out** and what was put back are derived by comparing each day's count to the previous *recorded* count for that flavor (days with no count are skipped, not treated as zero).
+- **"Taken out" is not "sold".** A tray leaves the freezer and is sold over the hours that follow, and the app can only see the freezer — so that is what every screen says. Over a week the two converge, which is what makes it usable as a sales figure; the wording just never claims more than it knows. Revenue prices what went out.
+- **Count by the tray.** Each flavor has a tray size — 36, 24, or 1 to count singles — set in Setup, and the whole Day row switches to trays for it: a tray taken out reads as one tray. Part trays are fine: `4.5` of a 24 tray is 108. Counts are always *stored* in pieces, which is what everything is priced in, so changing a tray size changes how the number is typed and read back and never what a day already logged means. Totals that span flavors stay in pieces, since a 36 tray and a 24 tray don't add up to anything.
 - **Hours auto-fill.** Every day gets a shift derived from the store's weekday hours plus prep/close-out buffers, with no data entry needed. Editing the default hours in Setup retroactively updates every day that hasn't been individually overridden.
 - **Storage** lives entirely behind `lib/storage.js` (`load()`/`save()`), which talks to `/api/state`. The whole `{ settings, days }` object is one JSONB row in Postgres, so the API is just a read and a write. Data entered before the migration is picked up from `localStorage` once and uploaded, so nothing is lost.
 - **One app, many locations.** Each franchise location is a tenant with its own flavors, staff, hours and history, stored as one JSONB row keyed by tenant. Owners register with an invite code and get only their own location; the franchisor sees a roll-up of all of them and can open any one.
@@ -42,8 +43,8 @@ Tables are created automatically on first use — there's no migration step, and
 
 ## Tabs
 
-- **Day** — date navigation, freezer counts with a comparison-period picker (yesterday/week/month/year), hours, and a note. Trayed flavors are entered and compared in trays; sold stays in pieces.
-- **Week** — stat tiles, sold-per-day bar chart, per-flavor ranking, and **Payroll**: what each person earned that week, a Mark paid button per person, and the running outstanding balance (or "All clear").
-- **Month** — the same stats plus **revenue and COGS**: what sold per product at its price, wages actually paid out during the month per person, ingredient cost, and gross margin.
+- **Day** — date navigation, freezer counts with a comparison-period picker (yesterday/week/month/year), hours, and a note. Trayed flavors are read and entered in trays throughout the row.
+- **Week** — stat tiles, taken-out-per-day bar chart, per-flavor ranking, and **Payroll**: what each person earned that week, a Mark paid button per person, and the running outstanding balance (or "All clear").
+- **Month** — the same stats plus **revenue and COGS**: what left the freezer per product at its price, wages actually paid out during the month per person, ingredient cost, and gross margin.
 - **Setup** — shop name, weekly store hours, prep/close buffers, staff & rates with sign-in PINs (**Set** to choose one, **Random** to issue one), products with their price, cost and flavors (each with its tray size), and a two-step data wipe.
 - **Account** (staff only) — change your own sign-in PIN.

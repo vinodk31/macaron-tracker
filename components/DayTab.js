@@ -5,7 +5,7 @@ import { addDays, formatShortDate, isToday, todayKey } from "@/lib/dates";
 import {
   COMPARISON_PERIODS,
   flavorCountAsOf,
-  flavorSoldInRange,
+  flavorTakenInRange,
   flavorsForProduct,
   formatTrays,
   isTrayed,
@@ -89,8 +89,8 @@ export default function DayTab({ settings, days, isStaff, dateKey, onDateChange,
 
         {settings.flavors.some(isTrayed) && (
           <p className="card-subtitle" style={{ marginTop: 0 }}>
-            Trayed flavors are counted in trays — part trays are fine (4.5). Sold is always in
-            pieces.
+            Trayed flavors are counted in trays, and part trays are fine (4.5). A drop in the
+            count is what came out of the freezer, not what was rung up.
           </p>
         )}
 
@@ -98,7 +98,7 @@ export default function DayTab({ settings, days, isStaff, dateKey, onDateChange,
           <div className="flavor-table-head">
             <span>Flavor</span>
             <span>Was</span>
-            <span>Sold</span>
+            <span>Taken out</span>
             <span>Today</span>
           </div>
           {settings.products.map((product) => {
@@ -109,12 +109,12 @@ export default function DayTab({ settings, days, isStaff, dateKey, onDateChange,
                 <div className="product-heading">{product.name}</div>
                 {flavors.map((flavor) => {
                   const trayed = isTrayed(flavor);
-                  // Freezer columns are in whatever the freezer is counted in;
-                  // sold stays in pieces, since that is what gets priced.
+                  // Everything on this row is in whatever the freezer is
+                  // counted in, so a tray taken out reads as one tray.
                   const asEntered = (units) =>
                     trayed ? formatTrays(unitsToTrays(units, flavor)) : String(units);
                   const was = flavorCountAsOf(days, flavor.id, comparisonKey);
-                  const { sold, restocked } = flavorSoldInRange(
+                  const { taken, restocked } = flavorTakenInRange(
                     days,
                     flavor.id,
                     addDays(comparisonKey, 1),
@@ -141,9 +141,11 @@ export default function DayTab({ settings, days, isStaff, dateKey, onDateChange,
                       <span className="col col-was">
                         {typeof was === "number" ? asEntered(was) : "–"}
                       </span>
-                      <span className="col col-sold">
-                        <span>{sold}</span>
-                        {restocked > 0 && <span className="restock-badge">+{restocked}</span>}
+                      <span className="col col-taken">
+                        <span>{asEntered(taken)}</span>
+                        {restocked > 0 && (
+                          <span className="restock-badge">+{asEntered(restocked)}</span>
+                        )}
                       </span>
                       <span className="col">
                         <input

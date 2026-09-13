@@ -426,7 +426,7 @@ a {
   color: var(--ink-soft);
 }
 
-.col-sold {
+.col-taken {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -711,7 +711,7 @@ textarea.text-input {
   transition: background 0.15s ease;
 }
 
-.bar-col .bar.sold {
+.bar-col .bar.taken {
   background: var(--raspberry);
 }
 
@@ -752,7 +752,7 @@ textarea.text-input {
   display: inline-block;
 }
 
-.legend-swatch.sold {
+.legend-swatch.taken {
   background: var(--raspberry);
 }
 

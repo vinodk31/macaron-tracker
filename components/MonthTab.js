@@ -20,11 +20,11 @@ export default function MonthTab({ settings, days, payments, anchor, onAnchorCha
   const flavors = settings.flavors;
 
   const totals = dailyTotals(days, flavors, startKey, endKey);
-  const unitsSold = totals.reduce((sum, t) => sum + t.sold, 0);
+  const unitsTaken = totals.reduce((sum, t) => sum + t.taken, 0);
   const freezerEnd = freezerLevelAsOf(days, flavors, endKey);
   const scheduledHours = scheduledHoursInRange(settings, days, startKey, endKey);
   const laborCost = laborCostInRange(settings, days, startKey, endKey);
-  const costPerMacaron = unitsSold > 0 ? laborCost / unitsSold : null;
+  const costPerMacaron = unitsTaken > 0 ? laborCost / unitsTaken : null;
   const ranking = flavorRanking(days, flavors, startKey, endKey);
   const revenue = revenueInRange(settings, days, startKey, endKey);
 
@@ -41,7 +41,7 @@ export default function MonthTab({ settings, days, payments, anchor, onAnchorCha
       </div>
 
       <div className="stat-grid">
-        <StatTile label="Units sold" value={unitsSold} accent="raspberry" />
+        <StatTile label="Taken out" value={unitsTaken} sub="pieces" accent="raspberry" />
         <StatTile
           label="Revenue"
           value={`$${revenue.toFixed(0)}`}
@@ -52,13 +52,13 @@ export default function MonthTab({ settings, days, payments, anchor, onAnchorCha
         <StatTile
           label="Labor cost"
           value={`$${laborCost.toFixed(0)}`}
-          sub={costPerMacaron !== null ? `$${costPerMacaron.toFixed(2)} / unit` : "no sales yet"}
+          sub={costPerMacaron !== null ? `$${costPerMacaron.toFixed(2)} / piece` : "nothing out yet"}
         />
       </div>
 
       <section className="card">
         <div className="card-header">
-          <h2>Sold per day</h2>
+          <h2>Taken out per day</h2>
         </div>
         <BarChart totals={totals} dayLabel={(d) => String(fromKey(d).getDate())} onJumpToDay={onJumpToDay} />
       </section>
@@ -75,6 +75,11 @@ export default function MonthTab({ settings, days, payments, anchor, onAnchorCha
       <section className="card">
         <div className="card-header">
           <h2>By flavor</h2>
+          {/* Pieces, not trays: a 36 tray and a 24 tray don't rank against
+              each other in any useful way. */}
+          <span className="card-subtitle" style={{ margin: 0 }}>
+            pieces
+          </span>
         </div>
         <FlavorRanking ranking={ranking} />
       </section>

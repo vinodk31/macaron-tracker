@@ -28,7 +28,7 @@ export async function GET(request) {
   const rows = await readAllStates();
   const locations = rows.map(({ id, name, data }) => {
     if (!data) {
-      return { id, name, unitsSold: 0, wages: 0, cogs: 0, outstanding: 0, staffCount: 0 };
+      return { id, name, unitsTaken: 0, wages: 0, cogs: 0, outstanding: 0, staffCount: 0 };
     }
     const state = normalizeState(data);
     const cogs = monthlyCogs(state.settings, state.days, state.payments, startKey, endKey);
@@ -37,7 +37,7 @@ export async function GET(request) {
       // Owners can rename their shop in Setup, so prefer what they call it now
       // over the name typed at registration.
       name: state.settings.shopName || name,
-      unitsSold: cogs.unitsSold,
+      unitsTaken: cogs.unitsTaken,
       wages: cogs.wages,
       cogs: cogs.total,
       outstanding: totalOutstanding(state.settings, state.days, state.payments, today),

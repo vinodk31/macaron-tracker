@@ -28,11 +28,11 @@ export default function LocationsScreen({ onOpenLocation, onSignOut }) {
 
   const totals = (locations || []).reduce(
     (acc, l) => ({
-      unitsSold: acc.unitsSold + l.unitsSold,
+      unitsTaken: acc.unitsTaken + l.unitsTaken,
       cogs: acc.cogs + l.cogs,
       outstanding: acc.outstanding + l.outstanding,
     }),
-    { unitsSold: 0, cogs: 0, outstanding: 0 }
+    { unitsTaken: 0, cogs: 0, outstanding: 0 }
   );
 
   return (
@@ -59,8 +59,8 @@ export default function LocationsScreen({ onOpenLocation, onSignOut }) {
           <>
             <div className="stat-grid">
               <div className="stat-tile accent-raspberry">
-                <div className="stat-label">Units sold</div>
-                <div className="stat-value">{totals.unitsSold}</div>
+                <div className="stat-label">Taken out</div>
+                <div className="stat-value">{totals.unitsTaken}</div>
                 <div className="stat-sub">across {locations.length} locations</div>
               </div>
               <div className="stat-tile">
@@ -79,7 +79,7 @@ export default function LocationsScreen({ onOpenLocation, onSignOut }) {
                   <span className="location-main">
                     <span className="location-name">{l.name}</span>
                     <span className="location-meta">
-                      {l.unitsSold} sold · {l.staffCount} staff
+                      {l.unitsTaken} out · {l.staffCount} staff
                       {!isSettled(l.outstanding) && (
                         <span className="location-owing"> · ${l.outstanding.toFixed(2)} owed</span>
                       )}
