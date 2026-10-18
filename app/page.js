@@ -24,6 +24,7 @@ import LoginGate from "@/components/LoginGate";
 import LocationsScreen from "@/components/LocationsScreen";
 import MyPayTab from "@/components/MyPayTab";
 import AccountTab from "@/components/AccountTab";
+import ScheduleTab from "@/components/ScheduleTab";
 
 const IDLE_LIMIT_MS = 5 * 60 * 1000;
 
@@ -38,6 +39,7 @@ const ADMIN_TABS = [
   { id: "day", label: "Day" },
   { id: "week", label: "Week" },
   { id: "month", label: "Month" },
+  { id: "schedule", label: "Schedule" },
   { id: "setup", label: "Setup" },
 ];
 
@@ -342,6 +344,15 @@ export default function Home() {
             anchor={monthAnchor}
             onAnchorChange={setMonthAnchor}
             onJumpToDay={jumpToDay}
+          />
+        )}
+        {tab === "schedule" && !isStaff && (
+          <ScheduleTab
+            settings={data.settings}
+            days={data.days}
+            anchor={monthAnchor}
+            onAnchorChange={setMonthAnchor}
+            onUpdateDay={updateDay}
           />
         )}
         {tab === "account" && isStaff && (
