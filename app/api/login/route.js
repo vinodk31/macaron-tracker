@@ -15,7 +15,7 @@ import {
   registerFailedAttempt,
 } from "@/lib/db";
 import { verifyPassword } from "@/lib/passwords";
-import { findStaffByPin, normalizeState } from "@/lib/model";
+import { findStaffByPin, isSignInPin, normalizeState } from "@/lib/model";
 import { throttleKey } from "@/lib/throttle";
 
 export const dynamic = "force-dynamic";
@@ -66,7 +66,7 @@ async function authenticate(body) {
 // Uniqueness is enforced when PINs are issued; if two locations somehow hold
 // the same one, refuse rather than guess which person is signing in.
 async function authenticateStaff(pin) {
-  if (!/^\d{5}$/.test(pin)) return null;
+  if (!isSignInPin(pin)) return null;
 
   const matches = await findTenantsWithPin(pin);
   if (matches.length !== 1) return null;

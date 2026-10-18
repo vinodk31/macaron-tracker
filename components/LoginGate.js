@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { login } from "@/lib/auth";
+import { isSignInPin } from "@/lib/model";
+
+const LEGACY_PIN_MAX = 5;
 import RegisterForm from "./RegisterForm";
 
 export default function LoginGate({ onSignedIn, notice }) {
@@ -64,7 +67,9 @@ export default function LoginGate({ onSignedIn, notice }) {
               inputMode="numeric"
               pattern="[0-9]*"
               autoComplete="off"
-              maxLength={5}
+              // Long enough for a PIN issued before the length changed; those
+              // still sign in, so the keypad can't refuse to hold one.
+              maxLength={LEGACY_PIN_MAX}
               value={pin}
               onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ""))}
               autoFocus
@@ -103,7 +108,7 @@ export default function LoginGate({ onSignedIn, notice }) {
         <button
           className="btn btn-primary login-submit"
           type="submit"
-          disabled={busy || (isPinMode && pin.length !== 5)}
+          disabled={busy || (isPinMode && !isSignInPin(pin))}
         >
           {busy ? "Signing in…" : "Sign in"}
         </button>

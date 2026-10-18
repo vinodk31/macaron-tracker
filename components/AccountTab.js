@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { PIN_LENGTH, isSignInPin } from "@/lib/model";
 import { setPin } from "@/lib/pins";
+
+// A PIN issued before the length changed is still a valid current one.
+const LEGACY_PIN_MAX = 5;
 
 // Where an employee changes their own sign-in PIN. The current one is asked
 // for because a kiosk tablet is shared: a session left open shouldn't let the
@@ -14,7 +18,8 @@ export default function AccountTab({ name }) {
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const ready = current.length === 5 && next.length === 5 && confirm.length === 5;
+  const ready =
+    isSignInPin(current) && next.length === PIN_LENGTH && confirm.length === PIN_LENGTH;
 
   // Retyping means they are starting again, so the last result stops applying.
   function edit(setter) {
@@ -54,14 +59,27 @@ export default function AccountTab({ name }) {
         <h2>Your PIN</h2>
       </div>
       <p className="card-subtitle">
-        Signed in as {name}. Pick any five digits you&apos;ll remember — you&apos;ll use it the next
-        time you sign in. Your manager can still see it in Setup, so ask them if you ever forget it.
+        Signed in as {name}. Pick any {PIN_LENGTH} digits you&apos;ll remember — you&apos;ll use
+        them the next time you sign in. Your manager can still see it in Setup, so ask them if you
+        ever forget it.
       </p>
 
       <form className="pin-form" onSubmit={submit}>
-        <PinField id="current-pin" label="Current PIN" value={current} onChange={edit(setCurrent)} autoFocus />
+        <PinField
+          id="current-pin"
+          label="Current PIN"
+          value={current}
+          onChange={edit(setCurrent)}
+          maxLength={LEGACY_PIN_MAX}
+          autoFocus
+        />
         <PinField id="new-pin" label="New PIN" value={next} onChange={edit(setNext)} />
-        <PinField id="confirm-pin" label="Repeat new PIN" value={confirm} onChange={edit(setConfirm)} />
+        <PinField
+          id="confirm-pin"
+          label="Repeat new PIN"
+          value={confirm}
+          onChange={edit(setConfirm)}
+        />
 
         {error && <p className="login-error">{error}</p>}
         {done && <p className="pin-saved">Saved. Use your new PIN next time you sign in.</p>}
@@ -74,7 +92,7 @@ export default function AccountTab({ name }) {
   );
 }
 
-function PinField({ id, label, value, onChange, autoFocus = false }) {
+function PinField({ id, label, value, onChange, maxLength = PIN_LENGTH, autoFocus = false }) {
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
@@ -85,7 +103,7 @@ function PinField({ id, label, value, onChange, autoFocus = false }) {
         inputMode="numeric"
         pattern="[0-9]*"
         autoComplete="off"
-        maxLength={5}
+        maxLength={maxLength}
         value={value}
         onChange={(e) => onChange(e.target.value.replace(/[^0-9]/g, ""))}
         autoFocus={autoFocus}

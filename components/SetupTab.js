@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { makeId, trayCapacity } from "@/lib/model";
+import { PIN_LENGTH, makeId, trayCapacity } from "@/lib/model";
 import { issuePin, setPin } from "@/lib/pins";
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -316,16 +316,16 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
                       inputMode="numeric"
                       pattern="[0-9]*"
                       autoComplete="off"
-                      maxLength={5}
+                      maxLength={PIN_LENGTH}
                       aria-label={`New PIN for ${p.name}`}
-                      placeholder={p.pin || "5 digits"}
+                      placeholder={p.pin || `${PIN_LENGTH} digits`}
                       value={pinDraft}
                       onChange={(e) => setPinDraft(e.target.value.replace(/[^0-9]/g, ""))}
                       autoFocus
                     />
                     <button
                       className="btn btn-sm btn-primary"
-                      disabled={pinDraft.length !== 5}
+                      disabled={pinDraft.length !== PIN_LENGTH}
                       onClick={() => saveChosenPin(p.id)}
                     >
                       Save
@@ -338,7 +338,8 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
               </div>
             ))}
             <p className="card-subtitle">
-              Staff sign in with these 5 digits via the Staff PIN button on the login screen. They
+              Staff sign in with these {PIN_LENGTH} digits via the Staff PIN button on the login
+              screen. They
               only ever see their own pay and hours. <strong>Set</strong> picks a specific number,
               <strong> Random</strong> issues an unused one; either way the old PIN stops working at
               once. Staff can change their own PIN from their Account tab, and it stays visible here.
