@@ -8,7 +8,7 @@ import {
   registerFailedAttempt,
   writeState,
 } from "@/lib/db";
-import { isValidPin, makePin, normalizeState } from "@/lib/model";
+import { PIN_LENGTH, isSignInPin, isValidPin, makePin, normalizeState } from "@/lib/model";
 import { throttleKey } from "@/lib/throttle";
 
 export const dynamic = "force-dynamic";
@@ -49,7 +49,10 @@ export async function PUT(request) {
 
   const pin = body?.pin;
   if (!isValidPin(pin)) {
-    return NextResponse.json({ error: "A PIN is exactly five digits." }, { status: 400 });
+    return NextResponse.json(
+      { error: `A PIN is exactly ${PIN_LENGTH} digits.` },
+      { status: 400 }
+    );
   }
 
   return session.role === ROLE_STAFF
@@ -78,7 +81,9 @@ async function changeOwnPin(request, session, pin, currentPin) {
   const me = state.settings.staff.find((s) => s.id === session.staffId);
   if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!isValidPin(currentPin) || currentPin !== me.pin) {
+  // The current PIN may still be one issued at the old length, so it is
+  // checked against what the keypad accepts rather than what a new one must be.
+  if (!isSignInPin(currentPin) || currentPin !== me.pin) {
     return retryable(await registerFailedAttempt(key), "That isn't your current PIN.");
   }
 
