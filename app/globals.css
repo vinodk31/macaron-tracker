@@ -1240,6 +1240,130 @@ textarea.text-input {
 }
 
 /* ---------------------------------------------------------------------- */
+/* Schedule calendar                                                       */
+/* ---------------------------------------------------------------------- */
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.cal-head {
+  margin-bottom: 4px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+.cal-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 46px;
+  padding: 4px 1px 5px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.cal-cell.outside {
+  opacity: 0.35;
+}
+
+.cal-cell.closed {
+  background: var(--cream-deep);
+}
+
+.cal-cell.today .cal-date {
+  color: var(--raspberry-deep);
+  font-weight: 800;
+}
+
+.cal-cell.selected {
+  border-color: var(--pistachio-deep);
+  outline: 1px solid var(--pistachio-deep);
+}
+
+.cal-date {
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.cal-who {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px;
+}
+
+.cal-initial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--pistachio);
+  color: var(--ink);
+  font-size: 0.58rem;
+  font-weight: 700;
+}
+
+.cal-more,
+.cal-closed {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--ink-faint);
+}
+
+.cal-edited {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--raspberry);
+}
+
+.cal-legend {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 10px;
+  font-size: 0.68rem;
+  color: var(--ink-faint);
+}
+
+.cal-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-dot {
+  position: static;
+}
+
+.cal-selected-label {
+  margin: 14px 4px 6px;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* ---------------------------------------------------------------------- */
 /* Products                                                                */
 /* ---------------------------------------------------------------------- */
 
