@@ -1,5 +1,6 @@
 "use client";
 
+import { formatTime } from "@/lib/dates";
 import {
   getShiftsForDate,
   isClosedForDate,
@@ -8,6 +9,11 @@ import {
   staffEarningsInRange,
 } from "@/lib/model";
 
+// `isStaff` makes this a read-out rather than an editor. Hours drive pay, so
+// they are the owner's to set from the Schedule tab; an employee sees the
+// shift they are working and nothing to change about it. The server drops a
+// shift arriving in a staff write regardless, so this is the display half of
+// a rule enforced elsewhere.
 export default function HoursCard({ settings, days, isStaff, dateKey, onUpdateDay }) {
   const allShifts = getShiftsForDate(settings, days, dateKey);
   // An employee edits their own hours and nothing else, so a shift that isn't
@@ -72,7 +78,7 @@ export default function HoursCard({ settings, days, isStaff, dateKey, onUpdateDa
       <div className="card-header">
         <h2>Hours</h2>
         {usingDefault ? (
-          <span className="default-badge">Default</span>
+          !isStaff && <span className="default-badge">Default</span>
         ) : isStaff ? (
           <span className="override-badge">Edited</span>
         ) : (
@@ -96,23 +102,32 @@ export default function HoursCard({ settings, days, isStaff, dateKey, onUpdateDa
         <p className="closed-banner">Kiosk closed</p>
       ) : (
         <>
+          {shifts.length === 0 && isStaff && (
+            <p className="empty-state">You&apos;re not on the schedule today.</p>
+          )}
           {shifts.map((shift, i) => (
             <div className="shift-row" key={i}>
-              <div className="shift-times">
-                <input
-                  type="time"
-                  className="time-input"
-                  value={shift.start}
-                  onChange={(e) => updateShift(i, { start: e.target.value })}
-                />
-                <span>–</span>
-                <input
-                  type="time"
-                  className="time-input"
-                  value={shift.end}
-                  onChange={(e) => updateShift(i, { end: e.target.value })}
-                />
-              </div>
+              {isStaff ? (
+                <div className="shift-times readonly">
+                  {formatTime(shift.start)} – {formatTime(shift.end)}
+                </div>
+              ) : (
+                <div className="shift-times">
+                  <input
+                    type="time"
+                    className="time-input"
+                    value={shift.start}
+                    onChange={(e) => updateShift(i, { start: e.target.value })}
+                  />
+                  <span>–</span>
+                  <input
+                    type="time"
+                    className="time-input"
+                    value={shift.end}
+                    onChange={(e) => updateShift(i, { end: e.target.value })}
+                  />
+                </div>
+              )}
               {!isStaff && (
                 <div className="shift-staff">
                   <select
@@ -129,18 +144,20 @@ export default function HoursCard({ settings, days, isStaff, dateKey, onUpdateDa
                   </select>
                 </div>
               )}
-              {shifts.length > 1 && (
+              {!isStaff && shifts.length > 1 && (
                 <button className="btn-ghost" onClick={() => removeShift(i)} aria-label="Remove shift">
                   ✕
                 </button>
               )}
             </div>
           ))}
-          <div className="btn-row" style={{ marginTop: 8 }}>
-            <button className="btn btn-sm" onClick={addShift}>
-              + Add shift
-            </button>
-          </div>
+          {!isStaff && (
+            <div className="btn-row" style={{ marginTop: 8 }}>
+              <button className="btn btn-sm" onClick={addShift}>
+                + Add shift
+              </button>
+            </div>
+          )}
           <div className="hours-summary">
             <span>
               Scheduled: <strong>{totalHours.toFixed(2)} hrs</strong>
