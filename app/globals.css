@@ -1330,6 +1330,57 @@ textarea.text-input {
   background: var(--raspberry);
 }
 
+.repeat-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.repeat-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+
+.repeat-summary {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-faint);
+  text-align: right;
+}
+
+.weekday-picker {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.weekday-chip {
+  flex: 1;
+  aspect-ratio: 1;
+  min-width: 0;
+  max-width: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--hairline);
+  background: var(--cream-deep);
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.weekday-chip.on {
+  background: var(--raspberry);
+  border-color: var(--raspberry);
+  color: #fff;
+}
+
 .apply-row {
   display: flex;
   align-items: center;

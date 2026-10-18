@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { UnauthorizedError, load, save } from "@/lib/storage";
 import { logout } from "@/lib/auth";
 import { useIdleTimeout } from "@/lib/useIdleTimeout";
-import { defaultState, makeId, normalizeState, roundMoney } from "@/lib/model";
+import { defaultState, dropUpcomingShifts, makeId, normalizeState, roundMoney } from "@/lib/model";
 import {
   addDays,
   addMonths,
@@ -210,6 +210,28 @@ export default function Home() {
     }));
   }, []);
 
+  // Both of these change the roster and the calendar in one update, so the
+  // two can never disagree about who is working. Only days from today forward
+  // are touched; what someone already worked is what they are still owed for.
+  const setStaffActive = useCallback((id, active) => {
+    setData((prev) => {
+      const settings = {
+        ...prev.settings,
+        staff: prev.settings.staff.map((p) => (p.id === id ? { ...p, active } : p)),
+      };
+      if (active) return { ...prev, settings };
+      return { ...prev, settings, days: dropUpcomingShifts(prev.days, id, todayKey()).days };
+    });
+  }, []);
+
+  const removeStaff = useCallback((id) => {
+    setData((prev) => ({
+      ...prev,
+      settings: { ...prev.settings, staff: prev.settings.staff.filter((p) => p.id !== id) },
+      days: dropUpcomingShifts(prev.days, id, todayKey()).days,
+    }));
+  }, []);
+
   const eraseAllData = useCallback(() => {
     setData((prev) => ({ ...prev, days: {}, payments: [] }));
   }, []);
@@ -357,6 +379,8 @@ export default function Home() {
           <SetupTab
             settings={data.settings}
             onUpdateSettings={updateSettings}
+            onSetStaffActive={setStaffActive}
+            onRemoveStaff={removeStaff}
             onEraseAllData={eraseAllData}
           />
         )}

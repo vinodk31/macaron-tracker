@@ -14,6 +14,7 @@ import {
   startOfMonth,
   startOfWeek,
   todayKey,
+  weekdayIndex,
 } from "@/lib/dates";
 import {
   getDefaultShiftsForDate,
@@ -28,14 +29,29 @@ import HoursCard from "./HoursCard";
 // The week starts on Monday everywhere else in the app, so the grid does too.
 const WEEKDAY_INITIALS = ["M", "T", "W", "T", "F", "S", "S"];
 
-// Each runs from the selected day, not from the start of the period. Picking
-// the day is how you say where to begin, which keeps a month-wide apply from
-// quietly rewriting shifts that have already been worked and paid.
-const SCOPES = [
-  { id: "day", label: "This day" },
-  { id: "week", label: "To week end" },
-  { id: "month", label: "To month end" },
+// Monday first, matching the grid directly above it. The order has to agree
+// with the calendar or the two read as different weeks.
+const WEEKDAYS = [
+  { index: 1, initial: "M", name: "Monday" },
+  { index: 2, initial: "T", name: "Tuesday" },
+  { index: 3, initial: "W", name: "Wednesday" },
+  { index: 4, initial: "T", name: "Thursday" },
+  { index: 5, initial: "F", name: "Friday" },
+  { index: 6, initial: "S", name: "Saturday" },
+  { index: 0, initial: "S", name: "Sunday" },
 ];
+
+// "Every Monday", "Weekdays", "Every day" — the same shorthand a phone alarm
+// uses, so the row of circles can be read at a glance instead of counted.
+function describeDays(picked) {
+  if (picked.size === 0) return "No days picked";
+  if (picked.size === 7) return "Every day";
+  const working = [1, 2, 3, 4, 5];
+  if (picked.size === 5 && working.every((d) => picked.has(d))) return "Weekdays";
+  if (picked.size === 2 && picked.has(0) && picked.has(6)) return "Weekends";
+  const names = WEEKDAYS.filter((d) => picked.has(d.index)).map((d) => d.name);
+  return `Every ${names.join(", ")}`;
+}
 
 // Owners only. Staff never get this tab, and the server never sends them a
 // colleague's shift in the first place, so there is nothing here for them to
@@ -43,11 +59,15 @@ const SCOPES = [
 export default function ScheduleTab({ settings, days, anchor, onAnchorChange, onUpdateDay }) {
   const monthStart = startOfMonth(anchor);
   const monthEnd = endOfMonth(anchor);
-  const [selected, setSelected] = useState(() => {
+  const selectedOnOpen = (() => {
     const today = todayKey();
     return today >= monthStart && today <= monthEnd ? today : monthStart;
-  });
-  const [scope, setScope] = useState("day");
+  })();
+  const [selected, setSelected] = useState(selectedOnOpen);
+  // Seeded with the weekday of whatever is selected on open, which is usually
+  // the day the owner came here to fill. It is not re-seeded when another day
+  // is tapped: that would throw away a selection they just made by hand.
+  const [picked, setPicked] = useState(() => new Set([weekdayIndex(selectedOnOpen)]));
   const [applyStaffId, setApplyStaffId] = useState(() => {
     const starred = settings.staff.find((s) => s.isDefault && s.active !== false);
     return (starred || settings.staff.find((s) => s.active !== false) || {}).id || "";
@@ -77,15 +97,30 @@ export default function ScheduleTab({ settings, days, anchor, onAnchorChange, on
     setSelected(startOfMonth(nextAnchor));
   }
 
-  // Closed days are skipped: nobody is scheduled on a day the kiosk is shut,
-  // and silently writing shifts behind a "Closed" banner would be a lie.
-  function scopeDays(scope) {
-    const end = scope === "day" ? selected : scope === "week" ? endOfWeek(selected) : monthEnd;
-    return eachDayInRange(selected, end).filter((key) => !isClosedForDate(settings, days, key));
+  // From the selected day to the end of the month, on the weekdays picked.
+  // Running forward from the selection rather than from the first of the month
+  // is what keeps a month-wide apply from rewriting shifts already worked
+  // and paid.
+  // Closed days are skipped: writing shifts behind a "Closed" banner would be
+  // a lie, and nobody is scheduled on a day the kiosk is shut.
+  function targetDays() {
+    return eachDayInRange(selected, monthEnd).filter(
+      (key) => picked.has(weekdayIndex(key)) && !isClosedForDate(settings, days, key)
+    );
+  }
+
+  function toggleWeekday(index) {
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+    setApplyNote("");
   }
 
   function applyToScope(mode) {
-    const targets = scopeDays(scope);
+    const targets = targetDays();
     const shift = { staffId: applyStaffId || null, start: applyStart, end: applyEnd };
 
     for (const dateKey of targets) {
@@ -211,20 +246,25 @@ export default function ScheduleTab({ settings, days, anchor, onAnchorChange, on
           <h2>Apply a shift</h2>
         </div>
         <p className="card-subtitle">
-          From the day you picked, forward. Closed days are left alone.
+          From the day you picked through the end of the month, on the days lit up below. Closed
+          days are left alone.
         </p>
 
-        <div className="segmented" style={{ marginBottom: 10 }}>
-          {SCOPES.map((s) => (
+        <div className="repeat-row">
+          <span className="repeat-label">Repeat</span>
+          <span className="repeat-summary">{describeDays(picked)}</span>
+        </div>
+        <div className="weekday-picker">
+          {WEEKDAYS.map((d) => (
             <button
-              key={s.id}
-              className={s.id === scope ? "active" : ""}
-              onClick={() => {
-                setScope(s.id);
-                setApplyNote("");
-              }}
+              key={d.index}
+              type="button"
+              className={`weekday-chip${picked.has(d.index) ? " on" : ""}`}
+              aria-pressed={picked.has(d.index)}
+              aria-label={d.name}
+              onClick={() => toggleWeekday(d.index)}
             >
-              {s.label}
+              {d.initial}
             </button>
           ))}
         </div>
@@ -263,13 +303,17 @@ export default function ScheduleTab({ settings, days, anchor, onAnchorChange, on
         </div>
 
         <div className="btn-row" style={{ marginTop: 10 }}>
-          <button className="btn btn-primary btn-sm" onClick={() => applyToScope("set")}>
+          <button
+            className="btn btn-primary btn-sm"
+            disabled={picked.size === 0}
+            onClick={() => applyToScope("set")}
+          >
             Set
           </button>
-          <button className="btn btn-sm" onClick={() => applyToScope("add")}>
+          <button className="btn btn-sm" disabled={picked.size === 0} onClick={() => applyToScope("add")}>
             Add
           </button>
-          <button className="btn btn-sm" onClick={() => applyToScope("clear")}>
+          <button className="btn btn-sm" disabled={picked.size === 0} onClick={() => applyToScope("clear")}>
             Reset
           </button>
         </div>
