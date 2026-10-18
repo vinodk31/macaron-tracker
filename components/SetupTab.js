@@ -7,7 +7,13 @@ import { issuePin, setPin } from "@/lib/pins";
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DISPLAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
-export default function SetupTab({ settings, onUpdateSettings, onEraseAllData }) {
+export default function SetupTab({
+  settings,
+  onUpdateSettings,
+  onSetStaffActive,
+  onRemoveStaff,
+  onEraseAllData,
+}) {
   const [confirmingErase, setConfirmingErase] = useState(false);
   const [pinError, setPinError] = useState("");
   const [editingPin, setEditingPin] = useState(null);
@@ -103,9 +109,7 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
     setPinDraft("");
   }
 
-  function removeStaff(id) {
-    onUpdateSettings((s) => ({ ...s, staff: s.staff.filter((p) => p.id !== id) }));
-  }
+
 
   function updateProduct(id, patch) {
     onUpdateSettings((s) => ({
@@ -273,15 +277,18 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
               value={p.rate}
               onChange={(e) => updateStaff(p.id, { rate: Number(e.target.value) || 0 })}
             />
-            <label className="checkbox-label active-toggle" title="Inactive staff cannot sign in">
+            <label
+              className="checkbox-label active-toggle"
+              title="Inactive staff cannot sign in, and come off the upcoming schedule"
+            >
               <input
                 type="checkbox"
                 checked={p.active !== false}
-                onChange={(e) => updateStaff(p.id, { active: e.target.checked })}
+                onChange={(e) => onSetStaffActive(p.id, e.target.checked)}
               />
               Active
             </label>
-            <button className="btn-ghost" onClick={() => removeStaff(p.id)} aria-label="Remove staff">
+            <button className="btn-ghost" onClick={() => onRemoveStaff(p.id)} aria-label="Remove staff">
               ✕
             </button>
           </div>
@@ -343,7 +350,9 @@ export default function SetupTab({ settings, onUpdateSettings, onEraseAllData })
               only ever see their own pay and hours. <strong>Set</strong> picks a specific number,
               <strong> Random</strong> issues an unused one; either way the old PIN stops working at
               once. Staff can change their own PIN from their Account tab, and it stays visible here.
-              Switching someone to inactive stops their PIN working without touching what they are owed.
+              Switching someone to inactive stops their PIN working and takes them off the schedule
+              from today on — what they already worked, and are still owed for, is untouched.
+              Removing someone does the same.
             </p>
           </>
         )}
