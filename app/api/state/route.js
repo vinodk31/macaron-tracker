@@ -74,6 +74,6 @@ export async function PUT(request) {
   const state = normalizeState(stored);
   if (!state.settings.staff.some((s) => s.id === session.staffId)) return unauthorized();
 
-  await writeState(session.tenantId, mergeStaffChanges(state, incoming, session.staffId));
+  await writeState(session.tenantId, mergeStaffChanges(state, incoming));
   return NextResponse.json({ ok: true });
 }

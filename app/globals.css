@@ -1157,6 +1157,14 @@ textarea.text-input {
   flex-shrink: 0;
 }
 
+/* A staff member reads their shift rather than editing it. */
+.shift-times.readonly {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
 .pin-input {
   letter-spacing: 0.5em;
   text-align: center;
@@ -1216,20 +1224,6 @@ textarea.text-input {
   min-width: 0;
   font-size: 1.05rem;
   letter-spacing: 0.3em;
-}
-
-.pin-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 12px;
-}
-
-.pin-saved {
-  margin: 0;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--pistachio-deep);
 }
 
 @media (min-width: 420px) {
@@ -1334,6 +1328,25 @@ textarea.text-input {
   height: 4px;
   border-radius: 50%;
   background: var(--raspberry);
+}
+
+.apply-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.apply-row .time-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.apply-note {
+  margin: 10px 0 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--pistachio-deep);
 }
 
 .cal-legend {

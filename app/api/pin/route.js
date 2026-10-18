@@ -1,15 +1,7 @@
 import { NextResponse } from "next/server";
 import { ROLE_STAFF, getSession } from "@/lib/session";
-import {
-  clearFailedAttempts,
-  collectUsedPins,
-  getLockRemainingSeconds,
-  readState,
-  registerFailedAttempt,
-  writeState,
-} from "@/lib/db";
-import { PIN_LENGTH, isSignInPin, isValidPin, makePin, normalizeState } from "@/lib/model";
-import { throttleKey } from "@/lib/throttle";
+import { collectUsedPins, readState } from "@/lib/db";
+import { PIN_LENGTH, isValidPin, makePin, normalizeState } from "@/lib/model";
 
 export const dynamic = "force-dynamic";
 
@@ -30,10 +22,9 @@ export async function POST(request) {
   }
 }
 
-// Setting a PIN by hand, rather than taking the random one. Staff change their
-// own and have to prove they know the current one; an owner sets one for
-// anybody at their location. Either way the number is checked against every
-// other location here, since that is the only place it can be.
+// Setting a PIN by hand, rather than taking the random one the POST above
+// suggests. Owners only, and the number is checked against every other
+// location here, since that is the only place it can be.
 export async function PUT(request) {
   const session = getSession(request);
   if (!session || !session.tenantId) {
@@ -55,46 +46,12 @@ export async function PUT(request) {
     );
   }
 
-  return session.role === ROLE_STAFF
-    ? changeOwnPin(request, session, pin, body?.currentPin)
-    : setStaffPin(session, String(body?.staffId || ""), pin);
-}
-
-async function changeOwnPin(request, session, pin, currentPin) {
-  // Two things are rate limited here: guessing the current PIN, and probing
-  // which numbers are already taken somewhere. Both would otherwise be free
-  // tries from inside a signed-in session. The counter is kept apart from the
-  // login one so fumbling a PIN change doesn't lock the whole kiosk out of
-  // signing in.
-  const key = `pinchange:${throttleKey(request)}`;
-  const lockedFor = await getLockRemainingSeconds(key);
-  if (lockedFor > 0) {
-    return NextResponse.json(
-      { error: "Too many attempts", retryInSeconds: lockedFor },
-      { status: 429 }
-    );
+  // Staff do not set PINs at all any more -- theirs is handed to them in
+  // Setup, and a forgotten one is reset there too.
+  if (session.role === ROLE_STAFF) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-
-  const stored = await readState(session.tenantId);
-  if (!stored) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const state = normalizeState(stored);
-  const me = state.settings.staff.find((s) => s.id === session.staffId);
-  if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  // The current PIN may still be one issued at the old length, so it is
-  // checked against what the keypad accepts rather than what a new one must be.
-  if (!isSignInPin(currentPin) || currentPin !== me.pin) {
-    return retryable(await registerFailedAttempt(key), "That isn't your current PIN.");
-  }
-
-  const taken = await isPinTaken(pin, me.pin);
-  if (taken) {
-    return retryable(await registerFailedAttempt(key), "That PIN is already in use. Pick another.", 409);
-  }
-
-  await writeState(session.tenantId, withPin(state, session.staffId, pin));
-  await clearFailedAttempts(key);
-  return NextResponse.json({ ok: true });
+  return setStaffPin(session, String(body?.staffId || ""), pin);
 }
 
 // The owner's browser holds the whole location and writes it back, so this
@@ -120,20 +77,4 @@ async function setStaffPin(session, staffId, pin) {
 async function isPinTaken(pin, mine) {
   const used = await collectUsedPins();
   return pin !== mine && used.has(pin);
-}
-
-function withPin(state, staffId, pin) {
-  return {
-    ...state,
-    settings: {
-      ...state.settings,
-      staff: state.settings.staff.map((s) => (s.id === staffId ? { ...s, pin } : s)),
-    },
-  };
-}
-
-function retryable(lockedSeconds, error, status = 401) {
-  return lockedSeconds
-    ? NextResponse.json({ error: "Too many attempts", retryInSeconds: lockedSeconds }, { status: 429 })
-    : NextResponse.json({ error }, { status });
 }
